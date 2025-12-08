@@ -2,6 +2,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime
+import cv2
+import os
 
 #Define path of annotated video, file containing per-frame counts, and name/path for the outpuy video
 
@@ -25,12 +27,6 @@ plt.xticks(range(0, len(time_hms), 2000), time_hms[::2000], rotation=45)  # Rota
 
 plt.savefig("output_with_boxes.png")
 plt.close()
-
-
-#Add graph to video
-import matplotlib.pyplot as plt
-import cv2
-import os
 
 cap = cv2.VideoCapture(video_name)
 
