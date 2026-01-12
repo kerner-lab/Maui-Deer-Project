@@ -2,7 +2,6 @@ import ultralytics
 from ultralytics import YOLO
 from ultralytics.utils import ThreadingLocked
 
-#Run inference
 from collections import defaultdict
 import cv2
 import numpy as np
@@ -23,7 +22,8 @@ def main(video_name):
     #model = YOLO("runs/detect/train32/weights/best.pt") #dearz7.5
     #model = YOLO("runs/detect/dearz9_clsp5_dfl1p5_ep450/weights/best.pt") #dearz9
     #model = YOLO("runs/detect/dearz12/weights/best.pt") #dearz12
-    model = YOLO("runs/detect/dearz13-hyp/weights/best.pt") #dearz13
+    model = YOLO("runs/detect/dearz13-baseline/weights/best.pt") #dearz13
+    filter_model = YOLO("runs/classify/drone-binary-1/weights/best.pt")
 
     #Specify video path
     
@@ -42,6 +42,7 @@ def main(video_name):
     #torch.cuda.current_device()
     device = torch.device('cuda')
     model = model.to(device)
+    filter_model = filter_model.to(device)
     
     # Define video properties for output video
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -56,8 +57,9 @@ def main(video_name):
     # Define output video writer
     vname = video_name.replace('.mov','')
     #vname = video_name.replace('.MP4','')
-    
-    vname = vname + '_D13_hyp'
+
+    #vname = vname + '_D13_shear5'
+    vname = '/scratch/ahessdun/' + vname + '_D13_two-step-test4'
     output_video_name = vname + ".mp4"
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for .mp4 files
     out = cv2.VideoWriter(output_video_name, fourcc, new_fps, (frame_width, frame_height))
@@ -82,6 +84,11 @@ def main(video_name):
         results = model.track(image, persist=True, iou = 0.25, conf = 0.1, show_conf = True, show_labels = True, verbose=False, save_txt=False, save_conf=False)
         return results
 
+    def thread_safe_predict2(image):
+        """Thread-safe prediction using a shared model instance."""
+        results = filter_model(image, verbose=False)
+        return results
+
     
     while cap.isOpened():
         
@@ -104,60 +111,65 @@ def main(video_name):
             
             # Perform detection
             #results = model.track(frame, persist=True, iou = 0.25, conf = 0.1, show_conf = True, show_labels = True, verbose=False, save_txt=False, save_conf=False)
-            results = thread_safe_predict(frame)
-            
-            # Get the boxes and track IDs
-            boxes = results[0].boxes.xywh.cpu()
-                    
-            labels = results[0].names  # Class labels
-            num_detections = len(boxes)
-        
-            # Visualize the results on the frame
-            annotated_frame = results[0].plot()
-        
-            # Draw bounding boxes and display the number of detections
-            for r in results:
-                for box in r.boxes:
-                    x, y, w, h = map(float, box.xywh[0])
-                    l = int((x - w / 2) * dw)
-                    r = int((x + w / 2) * dw)
-                    t = int((y - h / 2) * dh)
-                    b = int((y + h / 2) * dh)
-                    
-                    if l < 0:
-                      l = 0
-                    if r > dw - 1:
-                      r = dw - 1
-                    if t < 0:
-                      t = 0
-                    if b > dh - 1:
-                      b = dh - 1
-            
-                    x1 = int(x - w / 2)  # Left
-                    y1 = int(y - h / 2)  # Top
-                    x2 = int(x + w / 2)  # Right
-                    y2 = int(y + h / 2)  # Bottom
-                    # Draw bounding box
-                    #cv2.rectangle(frame, (int(x), int(y)), (int(w), int(h)), (0, 255, 0), 2)
-                    #cv2.rectangle(frame, (int(l), int(t)), (int(r), int(b)), (0, 255, 0), 2)
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    #f.write(f'{y1} {y2} {x1} {x2} {image_file}\n')
 
-                    conf = float(box.conf[0])               # confidence score
-                    cls = int(box.cls[0])                   # class index
-                    label = model.names[cls]                # class label
+            #Binary classifier to predict if deer in frame
+            filter_results = thread_safe_predict2(frame)
+            if filter_results[0].probs.data[0] > 0.5:
+                # Get the boxes and track IDs
+                results = thread_safe_predict(frame)
+                boxes = results[0].boxes.xywh.cpu()
+                        
+                labels = results[0].names  # Class labels
+                num_detections = len(boxes)
+            
+                # Visualize the results on the frame
+                annotated_frame = results[0].plot()
+            
+                # Draw bounding boxes and display the number of detections
+                for r in results:
+                    for box in r.boxes:
+                        x, y, w, h = map(float, box.xywh[0])
+                        l = int((x - w / 2) * dw)
+                        r = int((x + w / 2) * dw)
+                        t = int((y - h / 2) * dh)
+                        b = int((y + h / 2) * dh)
+                        
+                        if l < 0:
+                          l = 0
+                        if r > dw - 1:
+                          r = dw - 1
+                        if t < 0:
+                          t = 0
+                        if b > dh - 1:
+                          b = dh - 1
+                
+                        x1 = int(x - w / 2)  # Left
+                        y1 = int(y - h / 2)  # Top
+                        x2 = int(x + w / 2)  # Right
+                        y2 = int(y + h / 2)  # Bottom
+                        # Draw bounding box
+                        #cv2.rectangle(frame, (int(x), int(y)), (int(w), int(h)), (0, 255, 0), 2)
+                        #cv2.rectangle(frame, (int(l), int(t)), (int(r), int(b)), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        #f.write(f'{y1} {y2} {x1} {x2} {image_file}\n')
     
-                    #if label == 'Axis-Deer':
-                    #    label = ''
-                    text = f"{label} {conf:.2f}"
-                    cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.4, (0, 255, 0), 2)
-
-                    results_log.append({
-                        'frame': frame_count,
-                        'class_id': int(cls),
-                        'confidence': float(conf),
-                    })
+                        conf = float(box.conf[0])               # confidence score
+                        cls = int(box.cls[0])                   # class index
+                        label = model.names[cls]                # class label
+        
+                        #if label == 'Axis-Deer':
+                        #    label = ''
+                        text = f"{label} {conf:.2f}"
+                        cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX,
+                                0.4, (0, 255, 0), 2)
+    
+                        results_log.append({
+                            'frame': frame_count,
+                            'class_id': int(cls),
+                            'confidence': float(conf),
+                        })
+            else:
+                num_detections = 0
         
             
             # Display the number of detections in the current frame
@@ -172,8 +184,14 @@ def main(video_name):
     # Release resources
     cap.release()
     out.release()
-    cv2.destroyAllWindows()
+
+    try:
+        cv2.destroyAllWindows()
+    except cv2.error:
+        pass 
+        
     torch.cuda.empty_cache()
+
 
     counts_file = vname + '.txt'
     #Save per-frame dear values
