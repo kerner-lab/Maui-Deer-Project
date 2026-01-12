@@ -75,7 +75,7 @@ for i in "${!VIDEOS[@]}"; do
     video="${VIDEOS[$i]}"
     
     # Run processing on specific GPU
-    CUDA_VISIBLE_DEVICES=$gpu_id python two-step-dearz.py "$video" &
+    CUDA_VISIBLE_DEVICES=$gpu_id python Inference.py "$video" &
     
 done
 
