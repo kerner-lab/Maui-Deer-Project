@@ -17,28 +17,21 @@ def main(video_name):
     torch.backends.cudnn.allow_tf32 = True
 
     #Choose model for inference
-    
-    #model = YOLO("runs/detect/train29/weights/best.pt") #dearz7
-    #model = YOLO("runs/detect/train32/weights/best.pt") #dearz7.5
-    #model = YOLO("runs/detect/dearz9_clsp5_dfl1p5_ep450/weights/best.pt") #dearz9
-    #model = YOLO("runs/detect/dearz12/weights/best.pt") #dearz12
-    model = YOLO("runs/detect/dearz13-baseline/weights/best.pt") #dearz13
-    filter_model = YOLO("runs/classify/drone-binary-1/weights/best.pt")
 
-    #Specify video path
+    #FLIR models
+    model = YOLO("dearz13-baseline/weights/best.pt")
+    filter_model = YOLO("flir-binary-1/weights/best.pt")
+
+    #Drone models
+    #model = YOLO("Dearz-Drone-1-transfer/weights/best.pt")
+    #filter_model = YOLO("drone-binary-1/weights/best.pt")
     
+    #Specify video path
     #vpath = "/data/hkerner/maui-deer/deer-survey-2024-2025/DEERSURVEY3/Molokai Helicopter/" + video_name
-    vpath = "/data/hkerner/maui-deer/deer-survey-2024-2025/DEERSURVEY3/" + video_name
+    vpath = video_name
 
     cap = cv2.VideoCapture(vpath)
-
-
-
-    #print("FFmpeg in build?", "FFmpeg: YES" in cv2.getBuildInformation())
-
-    
-    
-        
+  
     #torch.cuda.current_device()
     device = torch.device('cuda')
     model = model.to(device)
