@@ -4,3 +4,7 @@
 4. Find the count files for the videos you want to count and add the names to the “videos” array in counts.py (make sure names are surrounded by “ ”)
 5. Set peak_dist in counts.py (should be 2 times the frames per second of the original video)
 6. Run python counts.py from the command line to get estimated deer counts for videos
+
+Deer vs. No Deer Filter Models
+
+The drone-binary-1 and flir-binary-1 directories contain lighter-weight models designed for an initial processing step to filter out video frames containing no deer (for drone and FLIR data respectively). Since the vast majority of frames contain no animals, this initial filtering step cuts down on both processing time and false-positives
