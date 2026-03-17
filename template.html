@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deer AI</title>
+  <style>
+    body    { margin: 0; font-family: sans-serif; background-color: black; position: relative; display: inline-block;}
+    #video  { display: block; height: 99.5vh; }
+    #bars   { position: absolute; bottom: 70px; left: 12px; right: 12px; height: 80px}
+    .bar    { position: absolute; background: white; cursor: pointer; bottom: 0; }
+    .bar:hover { background: red }
+    #panel { position: absolute; top: 0; right: 0; color: #fff; padding: 1em 4em; display: block; height: 200px; transition: transform 0.3s ease; text-align: right;} 
+    #panel.hidden { transform: translateY(-50%); }
+    th      { text-align: left; padding-bottom: 0.2em }
+    #toggleBtn { background: rgba(255, 255, 255, 0.15); color: white; border-radius: 4px; border: none; cursor: pointer; }
+    #toggleBtn:hover {  background: rgba(255, 255, 255, 0.25);  }
+  </style>
+</head>
+<body>
+  <video id="video" controls></video>
+  <div id="panel">
+    <table id="info">
+      <tr>  <th>Video:</th>           <td id="videoName"></td> </tr>
+      <tr>  <th>Date Processed:</th>  <td><<DATE>></td>  </tr>
+      <tr>  <th>Model Used:</th>      <td><<MODEL>></td></tr>
+      <tr>  <th>Timestamp:</th>      <td id="videoTime">0:00</td></tr>
+    </table>
+    <button id="toggleBtn" onclick="togglePanel()">▲</button>
+  </div>
+  <div id="bars" />
+  <script>
+    const filename = window.location.pathname.split('/').pop().replace(".html", "");
+    document.title = filename
+    document.getElementById("videoName").textContent = filename + '.mp4';
+    const video = document.getElementById('video');
+    video.src = filename + '.mp4';
+    const bars  = document.getElementById('bars');
+    const fps   = 10;
+    const counts = <<COUNTS>>
+    const countsBySecond = [];
+    const seconds = Math.round(counts.length / fps);
+    for (let s = 0; s < seconds; s++) {
+      const slice = counts.slice(s * fps, (s + 1) * fps);
+      const maxValue = Math.max(...slice)
+      const maxFrame = slice.indexOf(maxValue) + (s * fps); 
+      countsBySecond.push({ count: maxValue, timeMs: (maxFrame / fps) * 1000 });
+    }
+    const maxCount = Math.max(...countsBySecond.map(d => d.count));
+    console.log(maxCount)
+    countsBySecond.forEach((d, s) => {
+      if (d.count === 0) return;
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.left = (s / countsBySecond.length * 100) + '%';
+      bar.style.width = (1 / countsBySecond.length * 100) + '%';
+      bar.style.height = Math.round((Math.log1p(d.count) / Math.log1p(maxCount)) * 100) + '%';
+      bar.addEventListener('click', () => seekTo(d.timeMs));
+      bars.appendChild(bar);
+    });
+
+    function seekTo(timeMs) {
+      const timeSec = timeMs / 1000;
+      if (Math.abs(video.currentTime - timeSec) > 0.1) video.currentTime = timeSec;
+    }
+    function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+    video.addEventListener('timeupdate', () => {document.getElementById('videoTime').textContent = fmt(Math.round(video.currentTime));});
+
+    function togglePanel() {
+      const panel = document.getElementById('panel');
+      const btn = document.getElementById('toggleBtn');
+      panel.classList.toggle('hidden');
+      btn.textContent = panel.classList.contains('hidden') ? '▼' : '▲';
+    }
+    seekTo(0);
+  </script>
+</body>
+</html>
