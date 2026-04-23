@@ -11,7 +11,7 @@
     .bar    { position: absolute; background: white; cursor: pointer; bottom: 0; }
     .bar:hover { background: red }
     #panel { position: absolute; top: 0; right: 0; color: #fff; padding: 1em 4em; display: block; height: 200px; transition: transform 0.3s ease; text-align: right;} 
-    #panel.hidden { transform: translateY(-50%); }
+    #panel.hidden { transform: translateY(-60%); }
     th      { text-align: left; padding-bottom: 0.2em }
     #toggleBtn { background: rgba(255, 255, 255, 0.15); color: white; border-radius: 4px; border: none; cursor: pointer; }
     #toggleBtn:hover {  background: rgba(255, 255, 255, 0.25);  }
@@ -22,8 +22,9 @@
   <div id="panel">
     <table id="info">
       <tr>  <th>Video:</th>           <td id="videoName"></td> </tr>
-      <tr>  <th>Date Processed:</th>  <td><<DATE>></td>  </tr>
+      <tr>  <th>Total Deer Estimates:</th>  <td><<ESTIMATES>></td></tr>
       <tr>  <th>Model Used:</th>      <td><<MODEL>></td></tr>
+      <tr>  <th>Date Processed:</th>  <td><<DATE>></td>  </tr>
       <tr>  <th>Timestamp:</th>      <td id="videoTime">0:00</td></tr>
     </table>
     <button id="toggleBtn" onclick="togglePanel()">▲</button>
