@@ -3,29 +3,45 @@
 # Determining files to process
 # -------------------------------------------------------------------------------------------
 INPUT=$1
-files=()
-if [ -z "$INPUT" ]; then
-	echo "ERROR: DeerAI.sh expects a file path or folder path, usage:"
-	echo 'DeerAI.sh "C:\Users\John\deer_videos\video_1.mp4"'
-	echo 'DeerAI.sh "C:\Users\John\deer_videos"'
-	exit 1
-elif [ -d "$INPUT" ]; then
-	echo "'$INPUT' is a directory..."
-	DIR="${1:-.}"
-	mapfile -t files < <(find "$DIR" -type f \( -iname "*.mp4" -o -iname "*.mov" \) ! \( -iname "*_counts.mp4" -o -iname "*_counts.mov" \))
 
-elif [ -f "$INPUT" ]; then
-	EXT="${INPUT##*.}" 
-	if [ "$EXT" = "mp4" ] || [ "$EXT" = "mov" ]; then
-		files+=("$INPUT")
-	else 
-		echo "ERROR: DeerAI.sh expected a .mp4, .mov or directory but got a file with :.$EXT"
-	fi
-else
-	echo "ERROR: '$INPUT' is not a valid path"
-	exit 1
+INTRO="                                            
+▄▄▄▄▄▄                       ▄▄▄▄   ▄▄▄▄▄   
+███▀▀██▄                   ▄██▀▀██▄  ███    
+███  ███ ▄█▀█▄ ▄█▀█▄ ████▄ ███  ███  ███    
+███  ███ ██▄█▀ ██▄█▀ ██ ▀▀ ███▀▀███  ███    
+██████▀  ▀█▄▄▄ ▀█▄▄▄ ██    ███  ███ ▄███▄   
+"
+
+if [ -z "$INPUT" ]; then
+	echo "$INTRO"
+	echo ""
+	echo "Welcome to the DeerAI Detection system."
+	echo ""
 fi
-NUM_FILES=${#files[@]}
+
+files=()
+NUM_FILES=0
+
+while [ $NUM_FILES -eq 0 ]; do
+	read -r -p "Please enter a video file path or folder path: " INPUT
+	#INPUT="${INPUT//\\//}"
+	if [ -d "$INPUT" ]; then
+		echo "'$INPUT' is a directory..."
+		DIR="${INPUT:-.}"
+		mapfile -t files < <(find "$DIR" -type f \( -iname "*.mp4" -o -iname "*.mov" \) ! \( -iname "*_counts.mp4" -o -iname "*_counts.mov" \))
+
+	elif [ -f "$INPUT" ]; then
+		EXT="${INPUT##*.}" 
+		if [ "$EXT" = "mp4" ] || [ "$EXT" = "mov" ]; then
+			files+=("$INPUT")
+		else 
+			echo "ERROR: DeerAI.sh expected a .mp4, .mov or directory but got a file with :.$EXT"
+		fi
+	else
+		echo "$INPUT is not a valid file path or folder path."
+	fi
+	NUM_FILES=${#files[@]}
+done
 echo "Found ${NUM_FILES} files"
 
 # Environment setup

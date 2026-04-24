@@ -35,5 +35,7 @@ try:
 			time.sleep(0.2)
 
 finally:
+	print(f"\033{num_workers}B", end="", flush=True)
 	cursor.show()
+	print("")
 

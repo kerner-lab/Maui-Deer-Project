@@ -3,6 +3,7 @@ from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.utils import ThreadingLocked
 from pathlib import Path
+from time import sleep
 
 import math
 import numpy as np
@@ -83,7 +84,7 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
         deer_counts_confident.append(num_detections_confident)
 
     deer_counts_np = np.array(deer_counts)
-    deer_counts_confident_np = np.array(deer_counts)
+    deer_counts_confident_np = np.array(deer_counts_confident)
     deer_counts_peak_indices = peakutils.indexes(deer_counts_np, thres=0, min_dist=120)
     deer_counts_confident_peak_indices = peakutils.indexes(deer_counts_confident_np, thres=0, min_dist=120)
 
@@ -114,6 +115,7 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
         f.write(html_file)
     pbar.set_description(f"{out_name}.html")
     pbar.close()
+    time.sleep(2) # Ensures final bar gets written
 
 if __name__ == "__main__":
     if len(sys.argv) == 4:
