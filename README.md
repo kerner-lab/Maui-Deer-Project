@@ -2,16 +2,9 @@
 # DeerAI Detection System
 Detects deer in infrared helicopter and drone videos.
 
-### Setup
-On a machine with an NVIDIA GPU
-1. Install CUDA Drivers: nvidia.com/drivers
-2. Install python: python.org/downloads
-3. Install git: git-scm.com/install
-4. Download and unzip latest release: 
+To run on a Windows machine, download the latest release and run the script: `run.vbs`.
 
-### First run
-Inside unziped folder click run.vbs to run the detection system. 
-The first time this will automatically install necessary prerequisites. 
+The script will check all dependencies including: Git Bash, CUDA Drivers, Python.
 
 
 ### Models
