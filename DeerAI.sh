@@ -33,10 +33,10 @@ else
 	exit 1
 fi
 
-if command -v python &>/dev/null; then
+if command -v pip &>/dev/null; then
 	echo "✓ $(python --version)"
 else
-	echo "Python not found, install from https://www.python.com/downloads, and try again."
+	echo "Python not found, install from: https://www.python.org/downloads, and try again."
 	exit 1
 fi
 
@@ -94,7 +94,7 @@ while true; do
 		PROCESSING_TYPE="helicopter"
 	else
 		PROCESSING_TYPE=""
-		while [-z "$PROCESSING_TYPE" ]; do
+		while [ -z "$PROCESSING_TYPE" ]; do
 			read -r -p "Are these (d)rone or (h)elicopter videos?: " CHOICE
 			case $CHOICE in
 				h|H) PROCESSING_TYPE="helicopter" ;;
