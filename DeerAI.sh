@@ -69,18 +69,21 @@ while true; do
 		elif [ -d "$INPUT" ]; then
 			DIR="${INPUT:-.}"
 			mapfile -t files < <(find "$DIR" -type f \( -iname "*.mp4" -o -iname "*.mov" \) ! \( -iname "*_counts.mp4" -o -iname "*_counts.mov" \))
-
+			NUM_FILES=${#files[@]}
+			if [ $NUM_FILES -eq 0 ]; then
+				echo "ERROR: No .mp4 or .mov files found in this directory."
+			fi
 		elif [ -f "$INPUT" ]; then
 			EXT="${INPUT##*.}" 
 			if [ "$EXT" = "mp4" ] || [ "$EXT" = "mov" ]; then
 				files+=("$INPUT")
+				NUM_FILES=1
 			else 
 				echo "ERROR: DeerAI.sh expected a .mp4, .mov or directory but got a file with :.$EXT"
 			fi
 		else
 			echo "ERROR: $INPUT is not a valid file path or folder path."
 		fi
-		NUM_FILES=${#files[@]}
 	done
 	echo "Found ${NUM_FILES} video files."
 
