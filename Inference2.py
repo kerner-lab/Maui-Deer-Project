@@ -43,12 +43,12 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
     i = 0
     deer_counts = []
     deer_counts_confident = []
-
+    max_desc_length = 110
     if log_path:
         log_file = open(log_path, 'w', encoding="utf-8")
-        pbar = tqdm(total=total_frames, desc=video_name[-100:], file=log_file)
+        pbar = tqdm(total=total_frames, desc=video_name[-max_desc_length:], file=log_file)
     else:
-        pbar = tqdm(total=total_frames, desc=video_name[-100:])
+        pbar = tqdm(total=total_frames, desc=video_name[-max_desc_length:])
 
     while video_capture.isOpened():
         i += 1
@@ -114,7 +114,7 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
     
     with open(f"{out_name}.html", "w", encoding="utf-8") as f:
         f.write(html_file)
-    pbar.set_description(f"{out_name}.html")
+    pbar.set_description(f"{out_name[-max_desc_length:]}.html")
     pbar.close()
 
 if __name__ == "__main__":
