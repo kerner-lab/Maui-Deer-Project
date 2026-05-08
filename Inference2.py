@@ -43,11 +43,12 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
     i = 0
     deer_counts = []
     deer_counts_confident = []
+
     if log_path:
         log_file = open(log_path, 'w', encoding="utf-8")
-        pbar = tqdm(total=total_frames, desc=video_name, file=log_file)
+        pbar = tqdm(total=total_frames, desc=video_name[-100:], file=log_file)
     else:
-        pbar = tqdm(total=total_frames, desc=video_name)
+        pbar = tqdm(total=total_frames, desc=video_name[-100:])
 
     while video_capture.isOpened():
         i += 1
