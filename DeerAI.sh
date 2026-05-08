@@ -48,7 +48,7 @@ else
 	python -m venv venv
 	source venv/scripts/activate
 	echo "Installing required packages ..."
-	pip install -r requirements.txt
+	python -m pip install -r requirements.txt
 fi
 
 echo "✓ Python environment activated."
