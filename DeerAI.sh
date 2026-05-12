@@ -53,6 +53,20 @@ fi
 
 echo "✓ Python environment activated."
 
+# Draw bboxes
+# -------------------------------------------------------------------------------------------
+echo ""
+DRAW_BBOXES=""
+while [ -z "$DRAW_BBOXES" ]; do
+	read -r -p "Draw green bounding boxes on all detected deer? (y/n): " CHOICE
+	case $CHOICE in
+		y|Y) DRAW_BBOXES="y" ;;
+		n|N) DRAW_BBOXES="n"	;;
+		*) echo "Please enter y or n"	;;
+	esac
+done
+
+
 
 while true; do
 
@@ -118,14 +132,15 @@ while true; do
 
 	# Inference
 	# -------------------------------------------------------------------------------------------
+	echo ""
 	echo "Starting up detection models for each file (file paths can be opened with CTRL+click)."
 	PIDS=()
 	i=0
 	for file in "${files[@]}"; do
 		if [[ "$PROCESSING_TYPE" == "drone" ]]; then
-			python Inference2.py drone-binary-1 Dearz-Drone-1-transfer "$file" "logs/worker_$i.log" 2>logs/error_$i.log &
+			python Inference2.py drone-binary-1 Dearz-Drone-1-transfer "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
 		elif [[ "$PROCESSING_TYPE" == "helicopter" ]]; then
-			python Inference2.py flir-binary-1 dearz13-baseline "$file" "logs/worker_$i.log" 2>logs/error_$i.log &
+			python Inference2.py flir-binary-1 dearz13-baseline "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
 		else
 			echo "Processing type could not be determined."
 		fi	

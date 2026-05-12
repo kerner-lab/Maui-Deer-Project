@@ -13,7 +13,7 @@ import torch
 import cv2
 import peakutils
 
-def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz13-baseline", log_path=None):
+def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz13-baseline", log_path=None, draw_bboxes="y"):
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
@@ -68,16 +68,18 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
             for r in results:
                 for box in r.boxes:
                     x, y, w, h = map(float, box.xywh[0])
-                    x1, x2 = int(x - w / 2), int(x + w / 2)
-                    y1, y2 = int(y - h / 2), int(y + h / 2)
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     confidence_score = float(box.conf[0])  
                     if confidence_score > 0.5:
-                        num_detections_confident += 1             
-                    class_index = int(box.cls[0])                 
-                    class_label = model.names[class_index]                
-                    text = f"{class_label} {confidence_score:.2f}"
-                    cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 2)
+                        num_detections_confident += 1
+                    
+                    if draw_bboxes == "y":
+                        x1, x2 = int(x - w / 2), int(x + w / 2)
+                        y1, y2 = int(y - h / 2), int(y + h / 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)      
+                        class_index = int(box.cls[0])                 
+                        class_label = model.names[class_index]                
+                        text = f"{class_label} {confidence_score:.2f}"
+                        cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 2)
         
         cv2.putText(frame, f"Detections: {num_detections}", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 2)
         out_video.write(frame)
@@ -122,6 +124,9 @@ if __name__ == "__main__":
         main(filter_model_name=sys.argv[1], detect_model_name=sys.argv[2], video_name=sys.argv[3])
     elif len(sys.argv) == 5:
         main(filter_model_name=sys.argv[1], detect_model_name=sys.argv[2], video_name=sys.argv[3], log_path=sys.argv[4])
+    elif len(sys.argv) == 6:
+        main(filter_model_name=sys.argv[1], detect_model_name=sys.argv[2], video_name=sys.argv[3], log_path=sys.argv[4], draw_bboxes=sys.argv[5])
+
     else:
         print("Usage:       python Inference2.py <filter_model> <detect_model> <video_name>")
         print("HELICOPTER:  python Inference2.py flir-binary-1 dearz13-baseline <video_name>")
