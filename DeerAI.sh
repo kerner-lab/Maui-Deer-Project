@@ -13,6 +13,7 @@ if [ -z "$INPUT" ]; then
 	echo "$INTRO"
 	echo ""
 	echo "Welcome to the DeerAI Detection system."
+	echo "Version: 2026-05-19."
 	echo ""
 fi
 
@@ -33,7 +34,7 @@ else
 	exit 1
 fi
 
-if command -v pip &>/dev/null; then
+if command -v py &>/dev/null; then
 	echo "✓ $(python --version)"
 else
 	echo "Python not found, install from: https://www.python.org/downloads, and try again."
