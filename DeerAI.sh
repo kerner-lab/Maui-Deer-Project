@@ -35,9 +35,9 @@ else
 fi
 
 if command -v py &>/dev/null; then
-	echo "✓ $(python --version)"
+	echo "✓ $(py --version)"
 else
-	echo "Python not found, install from: https://www.python.org/downloads, and try again."
+	echo "Python (py) not found, install from: https://www.python.org/downloads, and try again."
 	exit 1
 fi
 
@@ -46,10 +46,10 @@ if [ -d "venv" ] ; then
 	source venv/scripts/activate
 else
 	echo "Setting up python environment ..."
-	python -m venv venv
+	py -m venv venv
 	source venv/scripts/activate
 	echo "Installing required packages ..."
-	python -m pip install -r requirements.txt
+	py -m pip install -r requirements.txt
 fi
 
 echo "✓ Python environment activated."
@@ -139,9 +139,9 @@ while true; do
 	i=0
 	for file in "${files[@]}"; do
 		if [[ "$PROCESSING_TYPE" == "drone" ]]; then
-			python Inference2.py drone-binary-1 Dearz-Drone-1-transfer "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
+			py Inference2.py drone-binary-1 Dearz-Drone-1-transfer "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
 		elif [[ "$PROCESSING_TYPE" == "helicopter" ]]; then
-			python Inference2.py flir-binary-1 dearz13-baseline "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
+			py Inference2.py flir-binary-1 dearz13-baseline "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
 		else
 			echo "Processing type could not be determined."
 		fi	
@@ -154,7 +154,7 @@ while true; do
 		fi
 	done
 
-	python monitor_logs.py "$NUM_FILES" &
+	py monitor_logs.py "$NUM_FILES" &
 	MONITOR_PID=$!
 
 	wait ${PIDS[@]}
