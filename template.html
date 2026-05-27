@@ -5,50 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deer AI</title>
   <style>
-    body    { margin: 0; font-family: sans-serif; background-color: black; position: relative; display: inline-block;}
-    #video  { display: block; height: 99.5vh; }
+    body    { margin: 0; font-family: sans-serif; background-color: black; position: relative; display: inline-block; width: 99vw}
+    #videoWrapper { position: relative; display: inline-block; height: 99.5vh; }
+    #video { height: 100%; display: block; }
     #bars   { position: absolute; bottom: 70px; left: 12px; right: 12px; height: 80px}
-    .bar    { position: absolute; background: white; cursor: pointer; bottom: 0; }
-    .bar:hover { background: red }
-    #panel { position: absolute; top: 0; right: 0; color: #fff; padding: 1em 4em; display: block; height: 200px; transition: transform 0.3s ease; text-align: right;} 
-    #panel.hidden { transform: translateY(-60%); }
-    th      { text-align: left; padding-bottom: 0.2em }
+    .bar    { position: absolute; cursor: pointer; bottom: 0; }
+    .bar               { background: rgba(255, 255, 255, 0.25); }
+    .bar.peak          { background: white; }
+    .bar.current       { background: #00ff44; }
+    .bar:hover         { background: #39ff14 !important; }
+    #panel { position: fixed; top: 0; right: 0; color: #fff; padding: 2em 4em; display: block; height: 99.5vh; transition: transform 0.3s ease; max-width: 360px; }
+    #panel.hidden { transform: translateX(100%); }
+    #toggleTab { position: fixed; top: 50%; right: 0; transform: translateY(-50%); background: rgba(0,0,0,0.75); border: 0.5px solid rgba(255,255,255,0.15); border-right: none; border-radius: 8px 0 0 8px; color: rgba(255,255,255,0.6); cursor: pointer; padding: 12px 6px; font-size: 18px; transition: right 0.3s ease, color 0.2s; z-index: 10; }
+    #toggleTab:hover { color: #39ff14; }
     #toggleBtn { background: rgba(255, 255, 255, 0.15); color: white; border-radius: 4px; border: none; cursor: pointer; }
     #toggleBtn:hover {  background: rgba(255, 255, 255, 0.25);  }
+    .peaks-panel { background: rgba(0,0,0,0.75); border: 0.5px solid rgba(255,255,255,0.15); padding: 1rem 1.25rem; font-family: monospace; color: #fff; min-width: 300px; }
+    .peaks-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .peaks-table th { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.35); text-align: left; padding: 0 8px 6px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+    .peaks-table td { font-size: 16px; padding: 7px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+    .peaks-table th:first-child,
+    .peaks-table td:first-child { width: 40%; }
+    .peaks-table th:nth-child(2),
+    .peaks-table td:nth-child(2) { width: 40%; }
+    .peaks-table th:last-child,
+    .peaks-table td:last-child { width: 20%; }
+    .peaks-table tr { cursor: pointer; transition: background 0.12s; }
+    .peaks-table tr:hover td { background: rgba(57,255,20,0.15); color: #39ff14; }
+    .peaks-table tr.selected td { background: rgba(0,255,68,0.12); color: #00ff44; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; display: inline-block; margin-right: 6px; vertical-align: middle; }
+    .peaks-table tr.selected .dot { background: #00ff44; }
+    .peaks-table tr:hover .dot { background: #39ff14; }
+    .count-bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .count-bar { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+    .peaks-table tr.selected .count-bar { background: rgba(0,255,68,0.4); }
+    .peaks-table tr:hover .count-bar { background: rgba(57,255,20,0.4); }
+    .correction-input { background: transparent; border: none; border-bottom: 0.5px solid rgba(255,255,255,0.2); color: #fff; font-family: monospace; font-size: 16px; outline: none; width: 48px }
+    .correction-input:focus { border-bottom-color: #00ff44; }
+    .correction-input::placeholder { color: rgba(255,255,255,0.2); }
   </style>
 </head>
 <body>
-  <video id="video" controls></video>
-  <div id="panel">
-    <table id="info">
-      <tr>  <th>Video:</th>           <td id="videoName"></td> </tr>
-      <tr>  <th>Total Deer Estimates:</th>  <td><<ESTIMATES>></td></tr>
-      <tr>  <th>Model Used:</th>      <td><<MODEL>></td></tr>
-      <tr>  <th>Date Processed:</th>  <td><<DATE>></td>  </tr>
-      <tr>  <th>Timestamp:</th>      <td id="videoTime">0:00</td></tr>
-    </table>
-    <button id="toggleBtn" onclick="togglePanel()">▲</button>
+  <div id="videoWrapper">
+    <video id="video" controls></video>
+    <div id="bars" />
   </div>
-  <div id="bars" />
+  <div id="panel" class="peaks-panel">
+    <h2>Peak Timestamps</h2>
+    <table id="timestampTable" class="peaks-table">
+      <thead><tr><th>Timestamp</th><th>Detections</th><th>Corrected</th></tr></thead>
+      <tfoot>
+      <tr>
+        <td style="padding-top:10px; border-top:0.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.35); font-size:11px; text-transform:uppercase; letter-spacing:0.08em;">Total</td>
+        <td style="padding-top:10px; border-top:0.5px solid rgba(255,255,255,0.15);"><<ESTIMATE>></td>
+        <td id="correctedTotal" style="padding-top:10px; border-top:0.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.4);">—</td>
+      </tr>
+    </tfoot>
+    </table>
+    <br><br><br>
+    <p style="font-size:12px; color:rgba(255,255,255,0.5); margin-top:0.75rem;">Processed on <<DATE>></p>
+  </div>
+  <div id="toggleTab" onclick="togglePanel()">▶</div>
+  
   <script>
-    const filename = window.location.pathname.split('/').pop().replace(".html", "");
+    const filename = window.location.pathname.split('/').pop().replace('.html', '');
     document.title = filename
-    document.getElementById("videoName").textContent = filename + '.mp4';
     const video = document.getElementById('video');
     video.src = filename + '.mp4';
     const bars  = document.getElementById('bars');
+    const timestampTable = document.getElementById('timestampTable')
     const fps   = 10;
-    const counts = <<COUNTS>>
+    const counts = <<COUNTS>>;
+    const peaks = <<PEAKS>>;
     const countsBySecond = [];
     const seconds = Math.round(counts.length / fps);
+
     for (let s = 0; s < seconds; s++) {
-      const slice = counts.slice(s * fps, (s + 1) * fps);
+      const firstFrame = s * fps
+      const lastFrame = (s + 1) * fps
+      const slice = counts.slice(firstFrame, lastFrame);
       const maxValue = Math.max(...slice)
       const maxFrame = slice.indexOf(maxValue) + (s * fps); 
-      countsBySecond.push({ count: maxValue, timeMs: (maxFrame / fps) * 1000 });
+      const isPeak = peaks.some(peak => (firstFrame <= peak) && (peak < lastFrame));
+      countsBySecond.push({ count: maxValue, timeMs: (maxFrame / fps) * 1000, isPeak: isPeak });
     }
     const maxCount = Math.max(...countsBySecond.map(d => d.count));
-    console.log(maxCount)
+    const barElements = [];
+    const trElements = [];
     countsBySecond.forEach((d, s) => {
       if (d.count === 0) return;
       const bar = document.createElement('div');
@@ -56,8 +99,24 @@
       bar.style.left = (s / countsBySecond.length * 100) + '%';
       bar.style.width = (1 / countsBySecond.length * 100) + '%';
       bar.style.height = Math.round((Math.log1p(d.count) / Math.log1p(maxCount)) * 100) + '%';
+      if (d.isPeak) bar.classList.add('peak')
       bar.addEventListener('click', () => seekTo(d.timeMs));
+      barElements[s] = bar;
       bars.appendChild(bar);
+
+      if (d.isPeak) {
+        const maxCount = Math.max(...countsBySecond.filter(x => x.isPeak).map(x => x.count));
+        const barW = Math.round((d.count / maxCount) * 40);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="dot"></span>${fmt(Math.round(d.timeMs / 1000))}</td>
+            <td><span class="count-bar-wrap"><span>${d.count}</span><span class="count-bar" style="width:${barW}px"></span></span></td>
+            <td><input class="correction-input" type="number" min="0" placeholder="—" /></td>
+        `;
+        tr.addEventListener('click', () => seekTo(d.timeMs));
+        timestampTable.appendChild(tr);
+        trElements[s] = tr
+      }
     });
 
     function seekTo(timeMs) {
@@ -65,14 +124,47 @@
       if (Math.abs(video.currentTime - timeSec) > 0.1) video.currentTime = timeSec;
     }
     function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
-    video.addEventListener('timeupdate', () => {document.getElementById('videoTime').textContent = fmt(Math.round(video.currentTime));});
-
     function togglePanel() {
       const panel = document.getElementById('panel');
-      const btn = document.getElementById('toggleBtn');
-      panel.classList.toggle('hidden');
-      btn.textContent = panel.classList.contains('hidden') ? '▼' : '▲';
+      const tab = document.getElementById('toggleTab');
+      const hidden = panel.classList.toggle('hidden');
+      tab.textContent = hidden ? '◀' : '▶';
+      tab.style.right = hidden ? '0' : (panel.offsetWidth + 'px');
     }
+
+    window.addEventListener('load', () => {
+      const tab = document.getElementById('toggleTab');
+      tab.style.right = document.getElementById('panel').offsetWidth + 'px';
+    });
+
+    video.addEventListener('timeupdate', () => {
+      const currentSecond = Math.floor(video.currentTime);
+      countsBySecond.forEach((d, s) => {
+        const bar = barElements[s];
+        if (!bar) return;
+        const isCurrentSecond = s === currentSecond;
+        bar.classList.toggle('current', s === currentSecond);
+        if (d.isPeak && trElements[s]) {
+            trElements[s].classList.toggle('selected', s === currentSecond);
+        }
+      });
+    });
+
+    document.getElementById('timestampTable').addEventListener('input', () => {
+      const inputs = document.querySelectorAll('.correction-input');
+      let total = 0;
+      let anyFilled = false;
+      inputs.forEach(input => {
+          if (input.value !== '') {
+              total += parseInt(input.value) || 0;
+              anyFilled = true;
+          }
+      });
+      const el = document.getElementById('correctedTotal');
+      el.textContent = anyFilled ? total : '—';
+      el.style.color = anyFilled ? '#00ff44' : 'rgba(255,255,255,0.4)';
+    });
+
     seekTo(0);
   </script>
 </body>

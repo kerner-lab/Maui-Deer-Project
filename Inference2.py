@@ -112,7 +112,8 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
         .replace("<<DATE>>", f"{date.today()}") \
         .replace("<<MODEL>>", detect_model_name) \
         .replace("<<COUNTS>>", f"{deer_counts}") \
-        .replace("<<ESTIMATES>>", estimates_str)
+        .replace("<<ESTIMATE>>", f"{estimate_range_max}") \
+        .replace("<<PEAKS>>", f"{deer_counts_peak_indices.tolist()}")
     
     with open(f"{out_name}.html", "w", encoding="utf-8") as f:
         f.write(html_file)
