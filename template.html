@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deer AI</title>
   <style>
-    body    { margin: 0; font-family: sans-serif; background-color: black; position: relative; display: inline-block; width: 99vw}
+    body    { margin: 0; font-family: monospace; background-color: black; position: relative; display: inline-block; width: 99vw; color: #fff;}
     #videoWrapper { position: relative; display: inline-block; height: 99.5vh; }
     #video { height: 100%; display: block; }
     #bars   { position: absolute; bottom: 70px; left: 12px; right: 12px; height: 80px}
@@ -14,33 +14,34 @@
     .bar.peak          { background: white; }
     .bar.current       { background: #00ff44; }
     .bar:hover         { background: #39ff14 !important; }
-    #panel { position: fixed; top: 0; right: 0; color: #fff; padding: 2em 4em; display: block; height: 99.5vh; transition: transform 0.3s ease; max-width: 360px; }
-    #panel.hidden { transform: translateX(100%); }
-    #toggleTab { position: fixed; top: 50%; right: 0; transform: translateY(-50%); background: rgba(0,0,0,0.75); border: 0.5px solid rgba(255,255,255,0.15); border-right: none; border-radius: 8px 0 0 8px; color: rgba(255,255,255,0.6); cursor: pointer; padding: 12px 6px; font-size: 18px; transition: right 0.3s ease, color 0.2s; z-index: 10; }
-    #toggleTab:hover { color: #39ff14; }
-    #toggleBtn { background: rgba(255, 255, 255, 0.15); color: white; border-radius: 4px; border: none; cursor: pointer; }
-    #toggleBtn:hover {  background: rgba(255, 255, 255, 0.25);  }
-    .peaks-panel { background: rgba(0,0,0,0.75); border: 0.5px solid rgba(255,255,255,0.15); padding: 1rem 1.25rem; font-family: monospace; color: #fff; min-width: 300px; }
-    .peaks-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .peaks-table th { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.35); text-align: left; padding: 0 8px 6px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
-    .peaks-table td { font-size: 16px; padding: 7px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
-    .peaks-table th:first-child,
-    .peaks-table td:first-child { width: 40%; }
-    .peaks-table th:nth-child(2),
-    .peaks-table td:nth-child(2) { width: 40%; }
-    .peaks-table th:last-child,
-    .peaks-table td:last-child { width: 20%; }
-    .peaks-table tr { cursor: pointer; transition: background 0.12s; }
-    .peaks-table tr:hover td { background: rgba(57,255,20,0.15); color: #39ff14; }
-    .peaks-table tr.selected td { background: rgba(0,255,68,0.12); color: #00ff44; }
+    #panel { position: fixed; top: 0; right: 0; height: 99.5vh; background: rgba(0,0,0,0.75); transition: transform 0.3s ease; display: flex}
+    #panel.hidden { transform: translateX(432px) }
+    #tableDiv { width: 400px; padding: 16px }
+    #toggle { display: flex; align-items: center; cursor: pointer; padding: 16px 16px; font-size: 24px; transition: right 0.3s ease, color 0.2s; }
+    #toggle:hover { background: rgba(255,255,255,0.1) }
+    
+    table { border-collapse: collapse; }
+    tr { display: table; width: 100%; table-layout: fixed; }
+    thead, tfoot { display: table; width: 100%; table-layout: fixed; }
+    tbody { display: block; max-height: 60vh; overflow-y: auto; width: 100%; overflow-x: hidden }
+    tbody::-webkit-scrollbar { width: 4px; }
+    tbody::-webkit-scrollbar-track { background: transparent; }
+    tbody::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    tbody::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+    th { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); text-align: left; padding: 0 8px 6px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+    td { font-size: 16px; padding: 7px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+    tr { display: table; width: 100%; table-layout: fixed; cursor: pointer; transition: background 0.12s; }
+    tr:hover td { background: rgba(57,255,20,0.15); color: #39ff14; }
+    tr.selected td { background: rgba(0,255,68,0.12); color: #00ff44; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; display: inline-block; margin-right: 6px; vertical-align: middle; }
-    .peaks-table tr.selected .dot { background: #00ff44; }
-    .peaks-table tr:hover .dot { background: #39ff14; }
+    tr.selected .dot { background: #00ff44; }
+    tr:hover .dot { background: #39ff14; }
     .count-bar-wrap { display: flex; align-items: center; gap: 6px; }
     .count-bar { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; }
-    .peaks-table tr.selected .count-bar { background: rgba(0,255,68,0.4); }
-    .peaks-table tr:hover .count-bar { background: rgba(57,255,20,0.4); }
-    .correction-input { background: transparent; border: none; border-bottom: 0.5px solid rgba(255,255,255,0.2); color: #fff; font-family: monospace; font-size: 16px; outline: none; width: 48px }
+    tr.selected .count-bar { background: rgba(0,255,68,0.4); }
+    tr:hover .count-bar { background: rgba(57,255,20,0.4); }
+    tfoot tr td { padding-top: 10px; border-top:0.5px solid rgba(255,255,255,0.15)}
+    .correction-input { background: transparent; border: none; border-bottom: 0.5px solid rgba(255,255,255,0.2); color: #fff; font-size: 16px; outline: none; width: 48px; font-family: monospace; }
     .correction-input:focus { border-bottom-color: #00ff44; }
     .correction-input::placeholder { color: rgba(255,255,255,0.2); }
   </style>
@@ -50,22 +51,32 @@
     <video id="video" controls></video>
     <div id="bars" />
   </div>
-  <div id="panel" class="peaks-panel">
-    <h2>Peak Timestamps</h2>
-    <table id="timestampTable" class="peaks-table">
-      <thead><tr><th>Timestamp</th><th>Detections</th><th>Corrected</th></tr></thead>
-      <tfoot>
-      <tr>
-        <td style="padding-top:10px; border-top:0.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.35); font-size:11px; text-transform:uppercase; letter-spacing:0.08em;">Total</td>
-        <td style="padding-top:10px; border-top:0.5px solid rgba(255,255,255,0.15);"><<ESTIMATE>></td>
-        <td id="correctedTotal" style="padding-top:10px; border-top:0.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.4);">—</td>
-      </tr>
-    </tfoot>
-    </table>
-    <br><br><br>
-    <p style="font-size:12px; color:rgba(255,255,255,0.5); margin-top:0.75rem;">Processed on <<DATE>></p>
+  <div id="panel">
+    <div id="toggle" onclick="togglePanel()">></div>
+    <div id="tableDiv">
+      <h2>Detection Peaks</h2>
+      <table id="peaksTable">
+        <thead><tr><th>TIMESTAMP</th><th>DETECTIONS</th><th>CORRECTED</th></tr></thead>
+        <tbody id="peaksTableBody"></tbody>
+        <tfoot>
+          <tr>
+            <td style="color:rgba(255,255,255,0.35); font-size:11px; letter-spacing:0.08em;">TOTAL</td>
+            <td><<ESTIMATE>></td>
+            <td id="correctedTotal" style="color:rgba(255,255,255,0.4);">—</td>
+          </tr>
+        </tfoot>
+      </table>
+      <br><br><br><br><br>
+      <div style=" line-height:1.8; display:grid; grid-template-columns:1fr 1fr; gap:0 8px;">
+          <div>↑ ↓&nbsp;&nbsp; prev / next peak</div>
+          <div>space &nbsp;▶ / ⏸</div>
+          <div>← →&nbsp;&nbsp; ±0.1s</div>
+          <div>h &nbsp;&nbsp;&nbsp; hide panel</div>
+      </div>
+      <br>
+      <p style="color:rgba(255,255,255,0.5)">Version: 20260529</p>
+    </div>
   </div>
-  <div id="toggleTab" onclick="togglePanel()">▶</div>
   
   <script>
     const filename = window.location.pathname.split('/').pop().replace('.html', '');
@@ -73,10 +84,10 @@
     const video = document.getElementById('video');
     video.src = filename + '.mp4';
     const bars  = document.getElementById('bars');
-    const timestampTable = document.getElementById('timestampTable')
+    const peaksTableBody = document.getElementById('peaksTableBody')
     const fps   = 10;
-    const counts = <<COUNTS>>;
-    const peaks = <<PEAKS>>;
+    const counts = <<COUNTS>>
+    const peaks = <<PEAKS>>
     const countsBySecond = [];
     const seconds = Math.round(counts.length / fps);
 
@@ -114,7 +125,7 @@
             <td><input class="correction-input" type="number" min="0" placeholder="—" /></td>
         `;
         tr.addEventListener('click', () => seekTo(d.timeMs));
-        timestampTable.appendChild(tr);
+        peaksTableBody.appendChild(tr);
         trElements[s] = tr
       }
     });
@@ -126,16 +137,10 @@
     function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
     function togglePanel() {
       const panel = document.getElementById('panel');
-      const tab = document.getElementById('toggleTab');
+      const tab = document.getElementById('toggle');
       const hidden = panel.classList.toggle('hidden');
-      tab.textContent = hidden ? '◀' : '▶';
-      tab.style.right = hidden ? '0' : (panel.offsetWidth + 'px');
+      tab.textContent = hidden ? '<' : '>';
     }
-
-    window.addEventListener('load', () => {
-      const tab = document.getElementById('toggleTab');
-      tab.style.right = document.getElementById('panel').offsetWidth + 'px';
-    });
 
     video.addEventListener('timeupdate', () => {
       const currentSecond = Math.floor(video.currentTime);
@@ -145,12 +150,16 @@
         const isCurrentSecond = s === currentSecond;
         bar.classList.toggle('current', s === currentSecond);
         if (d.isPeak && trElements[s]) {
-            trElements[s].classList.toggle('selected', s === currentSecond);
-        }
-      });
+            const isSelected = s === currentSecond;
+            trElements[s].classList.toggle('selected', isSelected);
+            if (isSelected) {
+              trElements[s].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }
+        });
     });
 
-    document.getElementById('timestampTable').addEventListener('input', () => {
+    document.getElementById('peaksTable').addEventListener('input', () => {
       const inputs = document.querySelectorAll('.correction-input');
       let total = 0;
       let anyFilled = false;
@@ -165,6 +174,37 @@
       el.style.color = anyFilled ? '#00ff44' : 'rgba(255,255,255,0.4)';
     });
 
+    document.addEventListener('keydown', (e) => {
+      if (e.target.classList.contains('correction-input')) return;
+      switch(e.key) {
+        case ' ':
+          e.preventDefault();
+          video.paused ? video.play() : video.pause();
+            break;
+          case 'ArrowRight':
+            video.currentTime += 0.1;
+            break;
+          case 'ArrowLeft':
+            video.currentTime -= 0.1;
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            const nextPeak = countsBySecond.find((d, s) => d.isPeak && s > Math.floor(video.currentTime));
+            if (nextPeak) seekTo(nextPeak.timeMs);
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            let prevPeak = null;
+            for (let i = Math.floor(video.currentTime) - 1; i >= 0; i--) {
+              if (countsBySecond[i]?.isPeak) { prevPeak = countsBySecond[i]; break; }
+            }
+            if (prevPeak) seekTo(prevPeak.timeMs);
+            break;
+          case 'h':
+            togglePanel();
+            break;   
+      }
+    });
     seekTo(0);
   </script>
 </body>

@@ -109,8 +109,6 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
         html_template = f.read()
     
     html_file = html_template \
-        .replace("<<DATE>>", f"{date.today()}") \
-        .replace("<<MODEL>>", detect_model_name) \
         .replace("<<COUNTS>>", f"{deer_counts}") \
         .replace("<<ESTIMATE>>", f"{estimate_range_max}") \
         .replace("<<PEAKS>>", f"{deer_counts_peak_indices.tolist()}")
