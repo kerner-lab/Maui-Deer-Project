@@ -13,7 +13,7 @@ if [ -z "$INPUT" ]; then
 	echo "$INTRO"
 	echo ""
 	echo "Welcome to the DeerAI Detection system."
-	echo "Version: 20260529."
+	echo "Version: 20260603."
 	echo ""
 fi
 
