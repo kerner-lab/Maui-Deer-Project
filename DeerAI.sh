@@ -78,7 +78,9 @@ while true; do
 	while [ $NUM_FILES -eq 0 ]; do
 		echo ""
 		echo ""
-		read -r -p "Enter a video file or folder path [SHIFT+INS to paste] or (Q)uit: " INPUT
+		read -r -p "Enter a video file or folder path [SHIFT+INS to paste] or (Q)uit: " INPUT 
+		INPUT="${INPUT//\"/}"       
+		INPUT="${INPUT//\'/}"
 		if [[ "$INPUT" == "q" ]] || [[ "$INPUT" == "Q" ]]; then
 			exit 1
 		elif [ -d "$INPUT" ]; then
