@@ -13,7 +13,6 @@ if [ -z "$INPUT" ]; then
 	echo "$INTRO"
 	echo ""
 	echo "Welcome to the DeerAI Detection system."
-	echo "Version: 20260603."
 	echo ""
 fi
 
@@ -54,21 +53,6 @@ fi
 
 echo "✓ Python environment activated."
 
-# Draw bboxes
-# -------------------------------------------------------------------------------------------
-echo ""
-DRAW_BBOXES=""
-while [ -z "$DRAW_BBOXES" ]; do
-	read -r -p "Draw green bounding boxes on all detected deer? (y/n): " CHOICE
-	case $CHOICE in
-		y|Y) DRAW_BBOXES="y" ;;
-		n|N) DRAW_BBOXES="n"	;;
-		*) echo "Please enter y or n"	;;
-	esac
-done
-
-
-
 while true; do
 
 	# File specification
@@ -92,7 +76,7 @@ while true; do
 			fi
 		elif [ -f "$INPUT" ]; then
 			EXT="${INPUT##*.}" 
-			if [ "$EXT" = "mp4" ] || [ "$EXT" = "mov" ]; then
+			if [ "$EXT" = "mp4" ] || [ "$EXT" = "mov" ] || [ "$EXT" = "MP4" ] || [ "$EXT" = "MOV" ]; then
 				files+=("$INPUT")
 				NUM_FILES=1
 			else 
@@ -102,7 +86,7 @@ while true; do
 			echo "ERROR: $INPUT is not a valid file path or folder path."
 		fi
 	done
-	echo "Found ${NUM_FILES} video files."
+	echo "Found ${NUM_FILES} video file(s)."
 
 
 	# Drone or helicopter videos?
@@ -141,9 +125,9 @@ while true; do
 	i=0
 	for file in "${files[@]}"; do
 		if [[ "$PROCESSING_TYPE" == "drone" ]]; then
-			py Inference2.py drone-binary-1 Dearz-Drone-1-transfer "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
+			py Inference2.py drone-binary-1 Dearz-Drone-1-transfer "$file" "logs/worker_$i.log" 2>logs/error_$i.log &
 		elif [[ "$PROCESSING_TYPE" == "helicopter" ]]; then
-			py Inference2.py flir-binary-1 dearz13-baseline "$file" "logs/worker_$i.log" "$DRAW_BBOXES" 2>logs/error_$i.log &
+			py Inference2.py flir-binary-1 dearz13-baseline "$file" "logs/worker_$i.log" 2>logs/error_$i.log &
 		else
 			echo "Processing type could not be determined."
 		fi	
