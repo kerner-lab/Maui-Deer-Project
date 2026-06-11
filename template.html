@@ -8,13 +8,18 @@
     body    { margin: 0; font-family: monospace; background-color: black; position: relative; display: inline-block; width: 99vw; color: #fff;}
     #videoWrapper { position: relative; display: inline-block; height: 99.5vh; }
     #video { height: 100%; display: block; }
-    #bars   { position: absolute; bottom: 70px; left: 12px; right: 12px; height: 80px}
+    #bars   { position: absolute; bottom: 60px; left: 12px; right: 12px; height: 50px; transition: 0.3s ease}
+    #bars:hover { transform: translate(0%, -100%) scaleY(3);}
     .bar    { position: absolute; cursor: pointer; bottom: 0; }
-    .bar               { background: rgba(255, 255, 255, 0.25); }
+    .bar               { background: rgba(255, 255, 255, 0.25);}
     .bar.peak          { background: white; }
-    .bar.current       { background: #00ff44; }
-    .bar:hover         { background: #39ff14 !important; }
-    #panel { position: fixed; top: 0; right: 0; height: 99.5vh; background: rgba(0,0,0,0.75); transition: transform 0.3s ease; display: flex}
+    .bar.current       { background: #00ff44; transform: translate(-250%, 0%) scaleX(3);}
+    .bar:hover         { background: #39ff14 !important; transform: translate(-250%, 0%) scaleX(3);}
+    #progressBar { position: absolute; bottom: 52px; left: 12px; right: 12px; height: 3px; background: rgba(255,255,255,0.15); cursor: pointer; }
+    #progressFill { position: absolute; left: 0; top: 0; height: 100%; background: #00bb33; pointer-events: none; }
+    #progressHandle { position: absolute; top: 50%; width: 10px; height: 10px; background: #00ff44; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: transform 0.1s; }
+    #progressBar:hover #progressHandle { transform: translate(-50%, -50%) scale(1.4); }
+    #panel { position: fixed; top: 0; right: 0; height: 80vh; background: rgba(0,0,0,0.5); transition: transform 0.3s ease; display: flex; border-radius: 0 0 0 4px}
     #panel.hidden { transform: translateX(432px) }
     #tableDiv { width: 400px; padding: 16px }
     #toggle { display: flex; align-items: center; cursor: pointer; padding: 16px 16px; font-size: 24px; transition: right 0.3s ease, color 0.2s; }
@@ -23,7 +28,7 @@
     table { border-collapse: collapse; }
     tr { display: table; width: 100%; table-layout: fixed; }
     thead, tfoot { display: table; width: 100%; table-layout: fixed; }
-    tbody { display: block; max-height: 60vh; overflow-y: auto; width: 100%; overflow-x: hidden }
+    tbody { display: block; max-height: 53vh; overflow-y: auto; width: 100%; overflow-x: hidden }
     tbody::-webkit-scrollbar { width: 4px; }
     tbody::-webkit-scrollbar-track { background: transparent; }
     tbody::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
@@ -31,15 +36,15 @@
     th { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); text-align: left; padding: 0 8px 6px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
     td { font-size: 16px; padding: 7px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
     tr { display: table; width: 100%; table-layout: fixed; cursor: pointer; transition: background 0.12s; }
-    tr:hover td { background: rgba(57,255,20,0.15); color: #39ff14; }
-    tr.selected td { background: rgba(0,255,68,0.12); color: #00ff44; }
+    tr:hover td { background: rgba(57,255,20,0.3); color: #39ff14; }
+    tr.selected td { background: rgba(0,255,68,0.2); color: #00ff44; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; display: inline-block; margin-right: 6px; vertical-align: middle; }
     tr.selected .dot { background: #00ff44; }
     tr:hover .dot { background: #39ff14; }
     .count-bar-wrap { display: flex; align-items: center; gap: 6px; }
     .count-bar { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; }
-    tr.selected .count-bar { background: rgba(0,255,68,0.4); }
-    tr:hover .count-bar { background: rgba(57,255,20,0.4); }
+    tr.selected .count-bar { background: rgba(0,255,68,0.7); }
+    tr:hover .count-bar { background: rgba(57,255,20,0.7); }
     tfoot tr td { padding-top: 10px; border-top:0.5px solid rgba(255,255,255,0.15)}
     .correction-input { background: transparent; border: none; border-bottom: 0.5px solid rgba(255,255,255,0.2); color: #fff; font-size: 16px; outline: none; width: 48px; font-family: monospace; }
     .correction-input:focus { border-bottom-color: #00ff44; }
@@ -48,8 +53,12 @@
 </head>
 <body>
   <div id="videoWrapper">
-    <video id="video" controls></video>
-    <div id="bars" />
+    <video id="video"></video>
+    <div id="bars"></div>
+    <div id="progressBar">
+      <div id="progressFill"></div>
+      <div id="progressHandle"></div>
+    </div>
   </div>
   <div id="panel">
     <div id="toggle" onclick="togglePanel()">></div>
@@ -66,15 +75,13 @@
           </tr>
         </tfoot>
       </table>
-      <br><br><br><br><br>
+      <br><br>
       <div style=" line-height:1.8; display:grid; grid-template-columns:1fr 1fr; gap:0 8px;">
           <div>↑ ↓&nbsp;&nbsp; prev / next peak</div>
           <div>space &nbsp;▶ / ⏸</div>
           <div>← →&nbsp;&nbsp; ±0.1s</div>
           <div>h &nbsp;&nbsp;&nbsp; hide panel</div>
       </div>
-      <br>
-      <p style="color:rgba(255,255,255,0.5)">Version: 20260603</p>
     </div>
   </div>
   
@@ -143,6 +150,9 @@
     }
 
     video.addEventListener('timeupdate', () => {
+      const pct = video.currentTime / video.duration * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressHandle').style.left = pct + '%';
       const currentSecond = Math.floor(video.currentTime);
       countsBySecond.forEach((d, s) => {
         const bar = barElements[s];
@@ -157,6 +167,20 @@
             }
           }
         });
+    });
+
+    const progressBar = document.getElementById('progressBar');
+    progressBar.addEventListener('click', (e) => {
+        const rect = progressBar.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        video.currentTime = pct * video.duration;
+    });
+
+    progressBar.addEventListener('mousemove', (e) => {
+        if (e.buttons !== 1) return;
+        const rect = progressBar.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        video.currentTime = pct * video.duration;
     });
 
     document.getElementById('peaksTable').addEventListener('input', () => {
