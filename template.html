@@ -7,14 +7,20 @@
   <style>
     body    { margin: 0; font-family: monospace; background-color: black; position: relative; display: inline-block; width: 99vw; color: #fff;}
     #videoWrapper { position: relative; display: inline-block; height: 99.5vh; }
-    #video { height: 100%; display: block; }
+    #video { height: 100%; display: block; cursor: pointer;}
     #bars   { position: absolute; bottom: 60px; left: 12px; right: 12px; height: 50px; transition: 0.3s ease}
     #bars:hover { transform: translate(0%, -100%) scaleY(3);}
-    .bar    { position: absolute; cursor: pointer; bottom: 0; }
-    .bar               { background: rgba(255, 255, 255, 0.25);}
-    .bar.peak          { background: white; }
-    .bar.current       { background: #00ff44;}
-    .bar:hover         { background: #39ff14 !important; }
+    .bar        { position: absolute; cursor: pointer; bottom: 0; background: rgba(255, 255, 255, 0.25); }
+
+    .bar.user        { background:  rgb(255, 217, 0, 0.6);}
+    .bar.user.peak   { background: rgb(255, 217, 0, 0.8); }
+    .bar.user.current { background: rgb(255, 106, 0) !important; }
+    .bar.user:hover   { background: #ffcc00 !important; }
+
+    .bar.pred.peak   { background: white; }
+    .bar.pred.current { background: #00ff44; }
+    .bar.pred:hover   { background: #39ff14 !important; }
+    
     #progressBar { position: absolute; bottom: 52px; left: 12px; right: 12px; height: 5px; background: rgba(255,255,255,0.15); cursor: pointer; }
     #progressFill { position: absolute; left: 0; top: 0; height: 100%; background: #00bb33; pointer-events: none; }
     #progressHandle { position: absolute; top: 50%; width: 10px; height: 10px; background: #00ff44; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: transform 0.1s; }
@@ -33,6 +39,9 @@
     tbody::-webkit-scrollbar-track { background: transparent; }
     tbody::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
     tbody::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+    #minDistInput::-webkit-outer-spin-button,
+    #minDistInput::-webkit-inner-spin-button { -webkit-appearance: none; }
+    #minDistInput { -moz-appearance: textfield; }
     th { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); text-align: left; padding: 0 8px 6px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
     td { font-size: 16px; padding: 7px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
     tr { display: table; width: 100%; table-layout: fixed; cursor: pointer; transition: background 0.12s; }
@@ -46,102 +55,176 @@
     tr.selected .count-bar { background: rgba(0,255,68,0.7); }
     tr:hover .count-bar { background: rgba(57,255,20,0.7); }
     tfoot tr td { padding-top: 10px; border-top:0.5px solid rgba(255,255,255,0.15)}
-    .correction-input { background: transparent; border: none; border-bottom: 0.5px solid rgba(255,255,255,0.2); color: #fff; font-size: 16px; outline: none; width: 48px; font-family: monospace; }
-    .correction-input:focus { border-bottom-color: #00ff44; }
-    .correction-input::placeholder { color: rgba(255,255,255,0.2); }
+    .adjustment { color:  rgb(255, 106, 0); font-family: monospace}
+    #boxes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .userBox { position: absolute; border: 1px solid rgb(255, 106, 0); box-sizing: border-box; width: 10px; height: 10px; transform: translate(-50%, -50%); }
+    #videoControl { position: absolute; bottom: 24px; left: 12px; font-family: monospace; color: white; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    #playPauseBtn  { background: transparent; border: none; color: white; cursor: pointer; line-height: 1; font-size: 14px; display: flex; align-items: center;}
   </style>
 </head>
 <body>
   <div id="videoWrapper">
     <video id="video"></video>
+    <div id="boxes"></div>
     <div id="bars"></div>
     <div id="progressBar">
       <div id="progressFill"></div>
       <div id="progressHandle"></div>
+    </div>
+    <div id="videoControl">
+      <button id="playPauseBtn" onclick="togglePlay()">▶</button>
+      <span id="timeIndicator">0:00.0 / 0:00.0</span>
     </div>
   </div>
   <div id="panel">
     <div id="toggle" onclick="togglePanel()">></div>
     <div id="tableDiv">
       <h2>Detection Peaks</h2>
+      <div>
+        <label>Minimum distance: </label>
+        <input type="number" id="minDistInput" value="12" min="1" max="300"
+          style="width:24px; background:transparent; border:none; border-bottom:0.5px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.6); font-family:monospace; outline:none;" />
+        <label>seconds</label>
+        </div>
+      <br/>
+      
       <table id="peaksTable">
-        <thead><tr><th>TIMESTAMP</th><th>DETECTIONS</th><th>CORRECTED</th></tr></thead>
+        <thead><tr><th>TIMESTAMP</th><th>DETECTIONS</th></tr></thead>
         <tbody id="peaksTableBody"></tbody>
         <tfoot>
           <tr>
             <td style="color:rgba(255,255,255,0.35); font-size:11px; letter-spacing:0.08em;">TOTAL</td>
-            <td><<ESTIMATE>></td>
-            <td id="correctedTotal" style="color:rgba(255,255,255,0.4);">—</td>
+            <td id="sum"></td>
           </tr>
         </tfoot>
       </table>
       <br><br>
       <div style=" line-height:1.8; display:grid; grid-template-columns:1fr 1fr; gap:0 8px;">
-          <div>↑ ↓&nbsp;&nbsp; prev / next peak</div>
-          <div>space &nbsp;▶ / ⏸</div>
-          <div>← →&nbsp;&nbsp; ±0.1s</div>
-          <div>h &nbsp;&nbsp;&nbsp; hide panel</div>
+        <div>space &nbsp;▶ / ⏸</div>  
+        <div>click &nbsp;&nbsp; add box</div>
+        <div>↑ ↓&nbsp;&nbsp; prev / next peak</div>
+        <div>ctrl+click remove box</div>
+        <div>← →&nbsp;&nbsp; prev / next frame</div>
+        <div>h &nbsp;&nbsp;&nbsp; hide panel</div>
+        
       </div>
     </div>
   </div>
   
-  <script>
-    const filename = window.location.pathname.split('/').pop().replace('.html', '');
-    document.title = filename
+  <script>  
+    const counts = <<COUNT>>
+    const fps   = 10;
+    const seconds = Math.floor(counts.length / fps);
+    const maxCount = Math.max(...counts); 
+    
     const video = document.getElementById('video');
-    video.src = filename + '.mp4';
+    const progressBar = document.getElementById('progressBar');
     const bars  = document.getElementById('bars');
     const peaksTableBody = document.getElementById('peaksTableBody')
-    const fps   = 10;
-    const counts = <<COUNTS>>
-    const peaks = <<PEAKS>>
-    const countsBySecond = [];
-    const seconds = Math.round(counts.length / fps);
+    const boxes = document.getElementById('boxes');
+    const sum = document.getElementById('sum')
+    const filename = window.location.pathname.split('/').pop().replace('.html', '');
+    document.title = filename
+    video.src = filename + '.mp4'; 
 
-    for (let s = 0; s < seconds; s++) {
-      const firstFrame = s * fps
-      const lastFrame = (s + 1) * fps
-      const slice = counts.slice(firstFrame, lastFrame);
-      const maxValue = Math.max(...slice)
-      const maxFrame = slice.indexOf(maxValue) + (s * fps); 
-      const isPeak = peaks.some(peak => (firstFrame <= peak) && (peak < lastFrame));
-      countsBySecond.push({ count: maxValue, timeMs: (maxFrame / fps) * 1000, isPeak: isPeak });
-    }
-    const maxCount = Math.max(...countsBySecond.map(d => d.count));
-    const barElements = [];
-    const trElements = [];
-    countsBySecond.forEach((d, s) => {
-      if (d.count === 0) return;
-      const bar = document.createElement('div');
-      bar.className = 'bar';
-      bar.style.left = (s / countsBySecond.length * 100) + '%';
-      bar.style.width = (1 / countsBySecond.length * 100) + '%';
-      bar.style.height = Math.round((Math.log1p(d.count) / Math.log1p(maxCount)) * 100) + '%';
-      if (d.isPeak) bar.classList.add('peak')
-      bar.addEventListener('click', () => seekTo(d.timeMs));
-      barElements[s] = bar;
-      bars.appendChild(bar);
-
-      if (d.isPeak) {
-        const maxCount = Math.max(...countsBySecond.filter(x => x.isPeak).map(x => x.count));
-        const barW = Math.round((d.count / maxCount) * 40);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><span class="dot"></span>${fmt(Math.round(d.timeMs / 1000))}</td>
-            <td><span class="count-bar-wrap"><span>${d.count}</span><span class="count-bar" style="width:${barW}px"></span></span></td>
-            <td><input class="correction-input" type="number" min="0" placeholder="—" /></td>
-        `;
-        tr.addEventListener('click', () => seekTo(d.timeMs));
-        peaksTableBody.appendChild(tr);
-        trElements[s] = tr
+    function togglePlay() { video.paused ? video.play() : video.pause() }
+    
+    function computePeaks(frames) {
+      const minDist = parseInt(document.getElementById('minDistInput').value) * fps;
+      const currentCounts = frames.map(f => f.count)
+      if (Math.max(...currentCounts) === 0) return [];
+      let candidates = currentCounts.map((v, i) => ({ i, v })).filter(({ i, v }) => {
+        if (v === 0) return false;
+        const left  = currentCounts[i - 1] ?? 0;
+        const right = currentCounts[i + 1] ?? 0;
+        return v >= left && v >= right;
+      });
+      const peaks = [];
+      for (const c of candidates) {
+        const tooClose = peaks.findLast(p => c.i - p.i < minDist);
+        if (tooClose) {
+          if (c.v > tooClose.v)
+            peaks.splice(peaks.indexOf(tooClose), 1, c); 
+        } else 
+            peaks.push(c);
       }
-    });
-
-    function seekTo(timeMs) {
-      const timeSec = timeMs / 1000;
-      if (Math.abs(video.currentTime - timeSec) > 0.1) video.currentTime = timeSec;
+      sum.textContent = peaks.map(p => p.v).reduce( (a,b) => (a+b) )
+      const peakIndices = peaks.map(p => p.i) 
+      frames.forEach(f => f.isPeak = peakIndices.includes(f.idx))
     }
-    function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+    function createBar(frame){
+      const bar = document.createElement('div');
+      const isUserBar = frame.userBoxes.length > 0
+      bar.className = isUserBar ? 'bar user' : 'bar pred'      
+      if (Math.floor(frame.time) === Math.floor(video.currentTime)  )
+        bar.classList.add('current')
+      if (frame.isPeak)
+        bar.classList.add('peak')
+      bar.style.left = ((Math.floor(frame.time) / seconds) * 100) + '%';
+      bar.style.width = (fps / frames.length) * 100 + '%';
+      bar.style.height = Math.round((Math.log1p(frame.count) / Math.log1p(maxCount)) * 100) + '%';
+      bar.addEventListener('click', () => seekTo(frame.time));
+      bars.appendChild(bar)
+      return bar
+    }
+
+    function createTableRow(frame){
+      const userAdded = frame.userBoxes.length
+      const barW = Math.round(frame.count / maxCount) * 40;
+      const tr = document.createElement('tr');
+      const adjustment = userAdded > 0 ? ("+" + userAdded) : "";
+      const isCurrentFrame = (Math.floor(video.currentTime * fps) === frame.idx)
+      tr.classList.toggle('selected', isCurrentFrame)
+      tr.innerHTML = `
+        <td><span class="dot"></span>${fmt(frame.time)}</td>
+        <td>
+          <span class="count-bar-wrap">
+            <span>${frame.predCount}</span>
+            <span class="adjustment">${adjustment}</span>
+            <span class="count-bar" style="width:${barW}px"></span>
+          </span>
+        </td>
+      `;
+      tr.addEventListener('click', () => seekTo(frame.time));
+      peaksTableBody.appendChild(tr)
+      return tr
+    }
+
+    function refreshBarsAndTable() {
+
+      computePeaks(frames)
+
+      peaksTableBody.innerHTML = '';
+      bars.innerHTML = '';
+      
+      for (let i = 0; i < frames.length; i+=fps){
+        let maxCountIdx = i
+        const framesToCheck = Math.min(frames.length - i, fps)
+        for (let j = 1; j < framesToCheck; j++){
+          if (frames[i+j].count > frames[maxCountIdx].count)
+            maxCountIdx = i+j
+        }    
+        if (frames[maxCountIdx].count === 0) continue
+        for (let j = 0; j < framesToCheck; j++){
+          const isPeakFrame = frames[i+j].isPeak
+          const isMaxFrameInSecond = i+j === maxCountIdx
+          frames[i+j].barElement = isMaxFrameInSecond ? createBar(frames[i+j]) : false;          
+          frames[i+j].trElement = isPeakFrame ? createTableRow(frames[i+j]) : false;
+        } 
+      }
+    }
+
+    function seekTo(time) {
+      if (Math.abs(video.currentTime - time) > 0.1) video.currentTime = time;
+    }
+    
+    function fmt(s) {     
+      const rounded = isNaN(s) ? 0 : Math.round(s * 10) / 10;
+      const tenths = Math.round((rounded * 10) % 10);
+      return Math.floor(rounded / 60) + ':' + String(Math.floor(rounded % 60)).padStart(2, '0') + '.' + tenths;
+    }
+
     function togglePanel() {
       const panel = document.getElementById('panel');
       const tab = document.getElementById('toggle');
@@ -149,27 +232,76 @@
       tab.textContent = hidden ? '<' : '>';
     }
 
+    // Setting up frame objects
+    const frames = counts.map((count, idx) => ({
+      idx, 
+      count, 
+      time: (idx / fps), 
+      predCount: count,
+      userCount: 0,
+      barElement: false,
+      trElement: false,
+      userBoxes: [],
+    }))
+    refreshBarsAndTable()
+
+    video.addEventListener('play',  () => document.getElementById('playPauseBtn').textContent = '⏸');
+    video.addEventListener('pause', () => document.getElementById('playPauseBtn').textContent = '▶');
     video.addEventListener('timeupdate', () => {
-      const pct = video.currentTime / video.duration * 100;
+      const pct = (Math.floor(video.currentTime) + 0.5) / (seconds) * 100;
       document.getElementById('progressFill').style.width = pct + '%';
       document.getElementById('progressHandle').style.left = pct + '%';
-      const currentSecond = Math.floor(video.currentTime);
-      countsBySecond.forEach((d, s) => {
-        const bar = barElements[s];
-        if (!bar) return;
-        const isCurrentSecond = s === currentSecond;
-        bar.classList.toggle('current', s === currentSecond);
-        if (d.isPeak && trElements[s]) {
-            const isSelected = s === currentSecond;
-            trElements[s].classList.toggle('selected', isSelected);
-            if (isSelected) {
-              trElements[s].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
+      document.getElementById('timeIndicator').textContent = " " + fmt(video.currentTime) + " / " + fmt(video.duration);
+      boxes.innerHTML = '';
+      frames.forEach(f => {
+        if (!f.barElement) return;
+        const isCurrentSecond = Math.floor(f.time) === Math.floor(video.currentTime) 
+        const isCurrentFrame = (Math.floor(video.currentTime * fps) === f.idx)
+        f.barElement.classList.toggle('current', isCurrentSecond);
+        if (f.trElement) {
+          f.trElement.classList.toggle('selected', isCurrentFrame)
+          if (isCurrentFrame){
+            f.trElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           }
-        });
+        }
+        if (isCurrentFrame){
+          f.userBoxes.forEach(b => boxes.appendChild(b.box) );
+        }
+      })
     });
 
-    const progressBar = document.getElementById('progressBar');
+    video.addEventListener('click', (e) => {
+        e.preventDefault();
+        const rect = video.getBoundingClientRect();
+        const xPct = (e.clientX - rect.left) / rect.width;
+        const yPct = (e.clientY - rect.top) / rect.height;
+        const idx = Math.floor(video.currentTime * fps);
+        if (e.ctrlKey) {
+          const BOX_SIZE_PCT_X = 10 / rect.width;
+          const BOX_SIZE_PCT_Y = 10 / rect.height;
+          const index = frames[idx].userBoxes.findIndex(b =>
+            Math.abs(b.xPct - xPct) < BOX_SIZE_PCT_X &&
+            Math.abs(b.yPct - yPct) < BOX_SIZE_PCT_Y
+          );
+          if (index !== -1) {
+            frames[idx].userBoxes[index].box.remove();
+            frames[idx].userBoxes.splice(index, 1);
+            frames[idx].count -= 1
+          }
+        } else {
+            const box = document.createElement('div');
+            box.className = 'userBox';
+            box.style.left = (xPct * 100) + '%';
+            box.style.top = (yPct * 100) + '%';
+            boxes.appendChild(box);
+            frames[idx].userBoxes.push({xPct, yPct, box});
+            frames[idx].count += 1
+        }
+        refreshBarsAndTable()
+    });
+
+    document.getElementById('minDistInput').addEventListener('change', refreshBarsAndTable);
+
     progressBar.addEventListener('click', (e) => {
         const rect = progressBar.getBoundingClientRect();
         const pct = (e.clientX - rect.left) / rect.width;
@@ -183,53 +315,30 @@
         video.currentTime = pct * video.duration;
     });
 
-    document.getElementById('peaksTable').addEventListener('input', () => {
-      const inputs = document.querySelectorAll('.correction-input');
-      let total = 0;
-      let anyFilled = false;
-      inputs.forEach(input => {
-          if (input.value !== '') {
-              total += parseInt(input.value) || 0;
-              anyFilled = true;
-          }
-      });
-      const el = document.getElementById('correctedTotal');
-      el.textContent = anyFilled ? total : '—';
-      el.style.color = anyFilled ? '#00ff44' : 'rgba(255,255,255,0.4)';
-    });
-
     document.addEventListener('keydown', (e) => {
-      if (e.target.classList.contains('correction-input')) return;
       switch(e.key) {
         case ' ':
           e.preventDefault();
           video.paused ? video.play() : video.pause();
             break;
-          case 'ArrowRight':
-            video.currentTime += 0.1;
-            break;
-          case 'ArrowLeft':
-            video.currentTime -= 0.1;
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            const nextPeak = countsBySecond.find((d, s) => d.isPeak && s > Math.floor(video.currentTime));
-            if (nextPeak) seekTo(nextPeak.timeMs);
-            break;
-          case 'ArrowUp':
-            e.preventDefault();
-            let prevPeak = null;
-            for (let i = Math.floor(video.currentTime) - 1; i >= 0; i--) {
-              if (countsBySecond[i]?.isPeak) { prevPeak = countsBySecond[i]; break; }
-            }
-            if (prevPeak) seekTo(prevPeak.timeMs);
-            break;
-          case 'h':
-            togglePanel();
-            break;   
+        case 'h': togglePanel(); break;    
+        case 'ArrowRight':  (video.currentTime = (Math.round(video.currentTime * fps) + 1) / fps); break;
+        case 'ArrowLeft':   (video.currentTime = (Math.round(video.currentTime * fps) - 1) / fps); break;
+        case 'ArrowDown':
+          e.preventDefault();
+          const nextPeak = frames.find(f => f.isPeak && (f.time > video.currentTime))
+          if (nextPeak) seekTo(nextPeak.time) 
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          const prevPeak = frames.findLast(f => f.isPeak && (f.time < video.currentTime))
+          if (prevPeak) seekTo(prevPeak.time) 
+          break;  
       }
     });
+
     seekTo(0);
+
   </script>
 </body>
 </html>

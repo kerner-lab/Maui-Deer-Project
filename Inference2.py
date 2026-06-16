@@ -6,12 +6,11 @@ from pathlib import Path
 from time import sleep
 
 import math
-import numpy as np
 import os
 import sys
 import torch
 import cv2
-import peakutils
+
 
 def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz13-baseline", log_path=None):
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -42,7 +41,6 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
     check_every_n_frame = int(math.ceil(original_fps / new_fps))
     i = 0
     deer_counts = []
-    deer_counts_confident = []
     max_desc_length = 110
     if log_path:
         log_file = open(log_path, 'w', encoding="utf-8")
@@ -67,35 +65,14 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
             num_detections = len(results[0].boxes.xywh.cpu())
             for r in results:
                 for box in r.boxes:
-                    x, y, w, h = map(float, box.xywh[0])
-                    confidence_score = float(box.conf[0])  
-                    if confidence_score > 0.5:
-                        num_detections_confident += 1
-                    
-                   
+                    x, y, w, h = map(float, box.xywh[0])                    
                     x1, x2 = int(x - w / 2), int(x + w / 2)
                     y1, y2 = int(y - h / 2), int(y + h / 2)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)      
-                                      
-                        
-                        
-        
-        cv2.putText(frame, f"Detections: {num_detections}", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 2)
+
         out_video.write(frame)
         deer_counts.append(num_detections)
-        deer_counts_confident.append(num_detections_confident)
 
-    deer_counts_np = np.array(deer_counts)
-    deer_counts_confident_np = np.array(deer_counts_confident)
-    deer_counts_peak_indices = peakutils.indexes(deer_counts_np, thres=0, min_dist=120)
-    deer_counts_confident_peak_indices = peakutils.indexes(deer_counts_confident_np, thres=0, min_dist=120)
-
-    estimate_range_min = sum(deer_counts_confident_np[deer_counts_confident_peak_indices].tolist())
-    estimate_range_max = sum(deer_counts_np[deer_counts_peak_indices].tolist())
-    estimates_str = f"{estimate_range_min}" if (estimate_range_min == estimate_range_max) else f"{estimate_range_min}-{estimate_range_max}"
-
-    pbar.set_postfix(deer_estimates=f"{estimates_str}")
-    
     video_capture.release()
     out_video.release()
     torch.cuda.empty_cache()
@@ -107,10 +84,7 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
     with open(f"template.html", "r", encoding="utf-8") as f:
         html_template = f.read()
     
-    html_file = html_template \
-        .replace("<<COUNTS>>", f"{deer_counts}") \
-        .replace("<<ESTIMATE>>", f"{estimate_range_max}") \
-        .replace("<<PEAKS>>", f"{deer_counts_peak_indices.tolist()}")
+    html_file = html_template.replace("<<COUNTS>>", f"{deer_counts}")
     
     with open(f"{out_name}.html", "w", encoding="utf-8") as f:
         f.write(html_file)
