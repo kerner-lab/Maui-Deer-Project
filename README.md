@@ -6,6 +6,9 @@ To run on a Windows machine, download the latest release and run the script: `ru
 
 The script will check all dependencies including: Git Bash, CUDA Drivers, Python.
 
+The script outputs an html file which shows the original video with overlaid deer detections and counts.
+
+
 ## Datasets
 
 Download the datasets:
@@ -13,7 +16,7 @@ Download the datasets:
 gcloud storage cp -r gs://deer-datasets/* .
 ```
 
-### Model Training
+## Model Training
 
 
 | Model             | Purpose                                           | Baseline          | Train Command                                 |
