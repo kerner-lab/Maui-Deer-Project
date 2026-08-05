@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['Axis-Deer-3EvU']
+
+roboflow:
+  workspace: deer-n2fpb
+  project: dearz-drone-crwpj
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/deer-n2fpb/dearz-drone-crwpj/dataset/1
