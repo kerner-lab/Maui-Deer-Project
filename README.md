@@ -6,13 +6,28 @@ To run on a Windows machine, download the latest release and run the script: `ru
 
 The script will check all dependencies including: Git Bash, CUDA Drivers, Python.
 
+The script outputs an html file which shows the original video with overlaid deer detections and counts.
 
-### Models
 
-**Deer vs. No Deer Filter Models**
+## Datasets
 
-The drone-binary-1 and flir-binary-1 directories contain lighter-weight models designed for an initial processing step to filter out video frames containing no deer (for drone and FLIR data respectively). Since the vast majority of frames contain no animals, this initial filtering step cuts down on both processing time and false-positives
+Download the datasets:
+```
+gcloud storage cp -r gs://deer-datasets/* .
+```
 
-**Deer Segmentation Models**
+## Model Training
 
-The Dearz-Drone-1-transfer and dearz13-baseline models are designed to segment and count the deer in a given frame (for drone and FLIR data respectively) after the initial "deer or no deer" filtering step.
+
+| Model             | Purpose                                           | Baseline          | Train Command                                 |
+| -------------     | -------------                                     | -------------     |  -------------                                |
+| flir-binary-1     | Filter out non-deer frames in helicopter videos.  | yolo11n           | `yolo cfg=flir-binary-1/args.yaml`            |
+| drone-binary-1    | Filter out non-deer frames in drone videos.       | yolo11n           | `yolo cfg=drone-binary-1/args.yaml`           |
+| dearz13-baseline  | Detects deer in helicopter videos.                | yolo12n           | `yolo cfg="dearz13-baseline/args.yaml`        |
+| Dearz-Drone-1-transfer | Detects deer in drone videos.                | dearz13-baseline  | `yolo cfg="Dearz-Drone-1-transfer/args.yaml`  |
+
+
+
+
+
+
