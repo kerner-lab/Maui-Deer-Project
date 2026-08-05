@@ -1,2 +1,12 @@
 logs
 venv
+yolo*
+Dearz-Drone-1-transfer/train
+Dearz-Drone-1-transfer/valid
+dearz13-baseline/train
+dearz13-baseline/valid
+dearz13-baseline/test
+drone-binary-1/train
+drone-binary-1/val
+flir-binary-1/train
+flir-binary-1/valid
