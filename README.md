@@ -18,13 +18,18 @@ gcloud storage cp -r gs://deer-datasets/* .
 
 ## Model Training
 
+```
+wandb init --project DeerAI --entity nasa-harvest
+yolo settings wandb=True
+```
+
 
 | Model             | Purpose                                           | Baseline          | Train Command                                 |
 | -------------     | -------------                                     | -------------     |  -------------                                |
-| flir-binary-1     | Filter out non-deer frames in helicopter videos.  | yolo11n           | `yolo cfg=flir-binary-1/args.yaml`            |
-| drone-binary-1    | Filter out non-deer frames in drone videos.       | yolo11n           | `yolo cfg=drone-binary-1/args.yaml`           |
-| dearz13-baseline  | Detects deer in helicopter videos.                | yolo12n           | `yolo cfg="dearz13-baseline/args.yaml`        |
-| Dearz-Drone-1-transfer | Detects deer in drone videos.                | dearz13-baseline  | `yolo cfg="Dearz-Drone-1-transfer/args.yaml`  |
+| flir-binary-1     | Filter out non-deer frames in helicopter videos.  | yolo11n           | `yolo cfg="flir-binary-1/args.yaml"`            |
+| drone-binary-1    | Filter out non-deer frames in drone videos.       | yolo11n           | `yolo cfg="drone-binary-1/args.yaml"`           |
+| dearz13-baseline  | Detects deer in helicopter videos.                | yolo12n           | `yolo cfg="dearz13-baseline/args.yaml"`        |
+| Dearz-Drone-1-transfer | Detects deer in drone videos.                | dearz13-baseline  | `yolo cfg="Dearz-Drone-1-transfer/args.yaml"`  |
 
 
 

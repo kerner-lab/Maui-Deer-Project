@@ -57,7 +57,6 @@ def main(video_name, filter_model_name="flir-binary-1", detect_model_name="dearz
         if i % check_every_n_frame != 0:
             continue
         num_detections = 0
-        num_detections_confident = 0
         deer_in_frame_out = thread_safe_predict2(frame)
         deer_in_frame = deer_in_frame_out[0].probs.data[0] > 0.5
         if deer_in_frame:
