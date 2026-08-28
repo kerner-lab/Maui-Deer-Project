@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deer AI</title>
+  <style>
+    body    { margin: 0; font-family: monospace; background-color: black; position: relative; display: inline-block; width: 99vw; color: #fff;}
+    #videoWrapper { position: relative; display: inline-block; height: 99.5vh; }
+    #video { height: 100%; display: block; cursor: pointer;}
+    #bars   { position: absolute; bottom: 60px; left: 12px; right: 12px; height: 50px; transition: 0.3s ease}
+    #bars:hover { transform: translate(0%, -100%) scaleY(3);}
+    .bar        { position: absolute; cursor: pointer; bottom: 0; background: rgba(255, 255, 255, 0.25); }
+    .bar.user        { background:  rgb(255, 217, 0, 0.6);}
+    .bar.user.peak   { background: rgb(255, 217, 0, 0.8); }
+    .bar.user.current { background: rgb(255, 106, 0) !important; }
+    .bar.user:hover   { background: #ffcc00 !important; }
+    .bar.pred.peak   { background: white; }
+    .bar.pred.current { background: #00ff44; }
+    .bar.pred:hover   { background: #39ff14 !important; }
+    
+    #progressBar { position: absolute; bottom: 52px; left: 12px; right: 12px; height: 5px; background: rgba(255,255,255,0.15); cursor: pointer; }
+    #progressFill { position: absolute; left: 0; top: 0; height: 100%; background: #00bb33; pointer-events: none; }
+    #progressHandle { position: absolute; top: 50%; width: 10px; height: 10px; background: #00ff44; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; transition: transform 0.1s; }
+    #progressBar:hover #progressHandle { transform: translate(-50%, -50%) scale(1.4); }
+    #panel { position: fixed; top: 0; right: 0; height: 90vh; background: rgba(0,0,0,0.5); transition: transform 0.3s ease; display: flex; border-radius: 0 0 0 4px}
+    #panel.hidden { transform: translateX(432px) }
+    #tableDiv { width: 360px; padding: 16px }
+    #toggle { display: flex; align-items: center; cursor: pointer; padding: 16px 16px; font-size: 24px; transition: right 0.3s ease, color 0.2s; }
+    #toggle:hover { background: rgba(255,255,255,0.1) }
+    
+    table { border-collapse: collapse; }
+    tr { display: table; width: 100%; table-layout: fixed; }
+    thead, tfoot { display: table; width: 100%; table-layout: fixed; }
+    tbody { display: block; max-height: 53vh; overflow-y: auto; width: 100%; overflow-x: hidden }
+    tbody::-webkit-scrollbar { width: 4px; }
+    tbody::-webkit-scrollbar-track { background: transparent; }
+    tbody::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    tbody::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+    #minDistInput::-webkit-outer-spin-button,
+    #minDistInput::-webkit-inner-spin-button { -webkit-appearance: none; }
+    #minDistInput { -moz-appearance: textfield; }
+    th { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); text-align: left; padding: 0 8px 6px; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+    td { font-size: 16px; padding: 7px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+    tr { display: table; width: 100%; table-layout: fixed; cursor: pointer; transition: background 0.12s; }
+    tr:hover td { background: rgba(57,255,20,0.3); color: #39ff14; }
+    tr.selected td { background: rgba(0,255,68,0.2); color: #00ff44; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; display: inline-block; margin-right: 6px; vertical-align: middle; }
+    tr.selected .dot { background: #00ff44; }
+    tr:hover .dot { background: #39ff14; }
+    .count-bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .count-bar { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+    tr.selected .count-bar { background: rgba(0,255,68,0.7); }
+    tr:hover .count-bar { background: rgba(57,255,20,0.7); }
+    tfoot tr td { padding-top: 10px; border-top:0.5px solid rgba(255,255,255,0.15)}
+    .adjustment { color:  rgb(255, 106, 0); font-family: monospace}
+    #boxes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .userBox { position: absolute; border: 1px solid rgb(255, 106, 0); box-sizing: border-box; width: 10px; height: 10px; transform: translate(-50%, -50%); }
+    #videoControl { position: absolute; bottom: 24px; left: 12px; font-family: monospace; color: white; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    #playPauseBtn  { background: transparent; border: none; color: white; cursor: pointer; line-height: 1; font-size: 14px; display: flex; align-items: center;}
+    #frameCountDiv { position: absolute; padding: 2rem 4rem; color: #39ff14; font-size: 24px;}
+    #userCount { color:  rgb(255, 106, 0) }
+  </style>
+</head>
+<body>
+  <div id="videoWrapper">
+    <div id="frameCountDiv">Detections:<span id="frameCount"></span><span id="userCount"></span></div>
+    <video id="video"></video>
+    <div id="boxes"></div>
+    <div id="bars"></div>
+    <div id="progressBar">
+      <div id="progressFill"></div>
+      <div id="progressHandle"></div>
+    </div>
+    <div id="videoControl">
+      <button id="playPauseBtn" onclick="togglePlay()">▶</button>
+      <span id="timeIndicator">0:00.0 / 0:00.0</span>
+    </div>
+  </div>
+  <div id="panel">
+    <div id="toggle" onclick="togglePanel()">></div>
+    <div id="tableDiv">
+      <h2>Detection Peaks</h2>
+      <div>
+        <label>Minimum distance: </label>
+        <input type="number" id="minDistInput" value="12" min="1" max="300"
+          style="width:24px; background:transparent; border:none; border-bottom:0.5px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.6); font-family:monospace; outline:none;" />
+        <label>seconds</label>
+        </div>
+      <br/>
+      
+      <table id="peaksTable">
+        <thead><tr><th>TIMESTAMP</th><th>DETECTIONS</th></tr></thead>
+        <tbody id="peaksTableBody"></tbody>
+        <tfoot>
+          <tr>
+            <td style="color:rgba(255,255,255,0.35); font-size:11px; letter-spacing:0.08em;">TOTAL</td>
+            <td id="sum"></td>
+          </tr>
+        </tfoot>
+      </table>
+      <br><br>
+      <div style=" line-height:1.8; display:grid; grid-template-columns:1fr 1fr; gap:0 8px;">
+        <div>space &nbsp;▶ / ⏸</div>  
+        <div>click &nbsp;&nbsp; add box</div>
+        <div>↑ ↓&nbsp;&nbsp; prev / next peak</div>
+        <div>ctrl+click remove box</div>
+        <div>← →&nbsp;&nbsp; prev / next frame</div>
+        <div>h &nbsp;&nbsp;&nbsp; hide panel</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>  
+    const counts = <<COUNTS>>
+    const fps   = 10;
+    const seconds = Math.floor(counts.length / fps);
+    const maxCount = Math.max(...counts); 
+    
+    const video = document.getElementById('video');
+    const progressBar = document.getElementById('progressBar');
+    const bars  = document.getElementById('bars');
+    const peaksTableBody = document.getElementById('peaksTableBody')
+    const boxes = document.getElementById('boxes');
+    const sum = document.getElementById('sum')
+    const filename = window.location.pathname.split('/').pop().replace('.html', '');
+    document.title = filename
+    video.src = filename + '.mp4'; 
+
+    function togglePlay() { video.paused ? video.play() : video.pause() }
+    
+    function computePeaks(frames) {
+      const minDist = parseInt(document.getElementById('minDistInput').value) * fps;
+      const currentCounts = frames.map(f => f.count)
+      if (Math.max(...currentCounts) === 0) return [];
+      let candidates = currentCounts.map((v, i) => ({ i, v })).filter(({ i, v }) => {
+        if (v === 0) return false;
+        const left  = currentCounts[i - 1] ?? 0;
+        const right = currentCounts[i + 1] ?? 0;
+        return v >= left && v >= right;
+      });
+      const peaks = [];
+      for (const c of candidates) {
+        const tooClose = peaks.findLast(p => c.i - p.i < minDist);
+        if (tooClose) {
+          if (c.v > tooClose.v)
+            peaks.splice(peaks.indexOf(tooClose), 1, c); 
+        } else 
+            peaks.push(c);
+      }
+      sum.textContent = peaks.map(p => p.v).reduce( (a,b) => (a+b) )
+      const peakIndices = peaks.map(p => p.i) 
+      frames.forEach(f => f.isPeak = peakIndices.includes(f.idx))
+    }
+
+    function createBar(frame){
+      const bar = document.createElement('div');
+      const isUserBar = frame.userBoxes.length > 0
+      bar.className = isUserBar ? 'bar user' : 'bar pred'      
+      if (Math.floor(frame.time) === Math.floor(video.currentTime)  )
+        bar.classList.add('current')
+      if (frame.isPeak)
+        bar.classList.add('peak')
+      bar.style.left = ((Math.floor(frame.time) / seconds) * 100) + '%';
+      bar.style.width = (fps / frames.length) * 100 + '%';
+      bar.style.height = Math.round((Math.log1p(frame.count) / Math.log1p(maxCount)) * 100) + '%';
+      bar.addEventListener('click', () => seekTo(frame.time));
+      bars.appendChild(bar)
+      return bar
+    }
+
+    function createTableRow(frame){
+      const userAdded = frame.userBoxes.length
+      const barW = Math.round(frame.count / maxCount) * 40;
+      const tr = document.createElement('tr');
+      const adjustment = userAdded > 0 ? ("+" + userAdded) : "";
+      const isCurrentFrame = (Math.floor(video.currentTime * fps) === frame.idx)
+      tr.classList.toggle('selected', isCurrentFrame)
+      tr.innerHTML = `
+        <td><span class="dot"></span>${fmt(frame.time)}</td>
+        <td>
+          <span class="count-bar-wrap">
+            <span>${frame.predCount}</span>
+            <span class="adjustment">${adjustment}</span>
+            <span class="count-bar" style="width:${barW}px"></span>
+          </span>
+        </td>
+      `;
+      tr.addEventListener('click', () => seekTo(frame.time));
+      peaksTableBody.appendChild(tr)
+      return tr
+    }
+
+    function refreshBarsAndTable() {
+
+      computePeaks(frames)
+
+      peaksTableBody.innerHTML = '';
+      bars.innerHTML = '';
+      
+      for (let i = 0; i < frames.length; i+=fps){
+        let maxCountIdx = i
+        const framesToCheck = Math.min(frames.length - i, fps)
+        for (let j = 1; j < framesToCheck; j++){
+          if (frames[i+j].count > frames[maxCountIdx].count)
+            maxCountIdx = i+j
+        }    
+        if (frames[maxCountIdx].count === 0) continue
+        for (let j = 0; j < framesToCheck; j++){
+          const isPeakFrame = frames[i+j].isPeak
+          const isMaxFrameInSecond = i+j === maxCountIdx
+          frames[i+j].barElement = isMaxFrameInSecond ? createBar(frames[i+j]) : false;          
+          frames[i+j].trElement = isPeakFrame ? createTableRow(frames[i+j]) : false;
+        } 
+      }
+    }
+
+    function seekTo(time) {
+      if (Math.abs(video.currentTime - time) > 0.1) video.currentTime = time;
+    }
+    
+    function fmt(s) {     
+      const rounded = isNaN(s) ? 0 : Math.round(s * 10) / 10;
+      const tenths = Math.round((rounded * 10) % 10);
+      return String(Math.floor(rounded / 60)).padStart(2, '0') + ':' + String(Math.floor(rounded % 60)).padStart(2, '0') + '.' + tenths;
+    }
+
+    function togglePanel() {
+      const panel = document.getElementById('panel');
+      const tab = document.getElementById('toggle');
+      const hidden = panel.classList.toggle('hidden');
+      tab.textContent = hidden ? '<' : '>';
+    }
+
+    // Setting up frame objects
+    const frames = counts.map((count, idx) => ({
+      idx, 
+      count, 
+      time: (idx / fps), 
+      predCount: count,
+      userCount: 0,
+      barElement: false,
+      trElement: false,
+      userBoxes: [],
+    }))
+    refreshBarsAndTable()
+
+    video.addEventListener('play',  () => document.getElementById('playPauseBtn').textContent = '⏸');
+    video.addEventListener('pause', () => document.getElementById('playPauseBtn').textContent = '▶');
+    video.addEventListener('timeupdate', () => {
+      const pct = (Math.floor(video.currentTime) + 0.5) / (seconds) * 100;      
+      const idx = Math.round(video.currentTime * fps)
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressHandle').style.left = pct + '%';
+      document.getElementById('timeIndicator').textContent = " " + fmt(video.currentTime) + " / " + fmt(video.duration);
+      document.getElementById('frameCount').textContent = frames[idx].count;
+      if (frames[idx].userBoxes.length > 0)
+        document.getElementById('userCount').textContent = "+" + frames[idx].userBoxes.length;
+        frames[idx].userBoxes.forEach(b => boxes.appendChild(b.box));
+
+      boxes.innerHTML = '';
+
+      frames.forEach(f => {
+        if (!f.barElement) return;
+        const isCurrentSecond = Math.floor(f.time) === Math.floor(video.currentTime) 
+        f.barElement.classList.toggle('current', isCurrentSecond);
+        if (f.trElement) {
+          f.trElement.classList.toggle('selected', idx === f.idx)
+          if (idx === f.idx){
+            f.trElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      })
+      if (frames[idx].userBoxes.length === 0)
+        document.getElementById('userCount').textContent = "";
+      else  
+        document.getElementById('userCount').textContent = "+" + frames[idx].userBoxes.length;
+
+    });
+
+    video.addEventListener('click', (e) => {
+        e.preventDefault();
+        const rect = video.getBoundingClientRect();
+        const xPct = (e.clientX - rect.left) / rect.width;
+        const yPct = (e.clientY - rect.top) / rect.height;
+        const idx = Math.floor(video.currentTime * fps);
+        if (e.ctrlKey) {
+          const BOX_SIZE_PCT_X = 10 / rect.width;
+          const BOX_SIZE_PCT_Y = 10 / rect.height;
+          const index = frames[idx].userBoxes.findIndex(b =>
+            Math.abs(b.xPct - xPct) < BOX_SIZE_PCT_X &&
+            Math.abs(b.yPct - yPct) < BOX_SIZE_PCT_Y
+          );
+          if (index !== -1) {
+            frames[idx].userBoxes[index].box.remove();
+            frames[idx].userBoxes.splice(index, 1);
+            frames[idx].count -= 1
+          }
+        } else {
+          const box = document.createElement('div');
+          box.className = 'userBox';
+          box.style.left = (xPct * 100) + '%';
+          box.style.top = (yPct * 100) + '%';
+          boxes.appendChild(box);
+          frames[idx].userBoxes.push({xPct, yPct, box});
+          frames[idx].count += 1
+        }
+        if (frames[idx].userBoxes.length === 0)
+          document.getElementById('userCount').textContent = "";
+        else  
+          document.getElementById('userCount').textContent = "+" + frames[idx].userBoxes.length;
+        refreshBarsAndTable()
+    });
+
+    document.getElementById('minDistInput').addEventListener('change', refreshBarsAndTable);
+
+    progressBar.addEventListener('click', (e) => {
+        const rect = progressBar.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        video.currentTime = pct * video.duration;
+    });
+
+    progressBar.addEventListener('mousemove', (e) => {
+        if (e.buttons !== 1) return;
+        const rect = progressBar.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        video.currentTime = pct * video.duration;
+    });
+
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case ' ':
+          e.preventDefault();
+          video.paused ? video.play() : video.pause();
+            break;
+        case 'h': togglePanel(); break;    
+        case 'ArrowRight':  (video.currentTime = (Math.round(video.currentTime * fps) + 1) / fps); break;
+        case 'ArrowLeft':   (video.currentTime = (Math.round(video.currentTime * fps) - 1) / fps); break;
+        case 'ArrowDown':
+          e.preventDefault();
+          const nextPeak = frames.find(f => f.isPeak && (f.idx > Math.round(video.currentTime * fps)))
+          if (nextPeak) seekTo(nextPeak.time) 
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          const prevPeak = frames.findLast(f => f.isPeak && (f.idx < Math.round(video.currentTime * fps)))
+          if (prevPeak) seekTo(prevPeak.time) 
+          break;  
+      }
+    });
+
+    seekTo(0);
+
+  </script>
+</body>
+</html>

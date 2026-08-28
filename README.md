@@ -1,14 +1,38 @@
-1. In Inference.py, select either drone or flir models and comment out the rest (below line 19)
-2. Type in the video names you want to analyze in Dearz.sh (make sure names are surrounded by “ ”)
-3. Run ./Dearz.sh from command line and wait for videos to be analyzed/annotated
-4. Find the count files for the videos you want to count and add the names to the “videos” array in counts.py (make sure names are surrounded by “ ”)
-5. Set peak_dist in counts.py (should be 2 times the frames per second of the original video)
-6. Run python counts.py from the command line to get estimated deer counts for videos
 
-Deer vs. No Deer Filter Models
+# DeerAI Detection System
+Detects deer in infrared helicopter and drone videos.
 
-The drone-binary-1 and flir-binary-1 directories contain lighter-weight models designed for an initial processing step to filter out video frames containing no deer (for drone and FLIR data respectively). Since the vast majority of frames contain no animals, this initial filtering step cuts down on both processing time and false-positives
+To run on a Windows machine, download the latest release and run the script: `run.vbs`.
 
-Deer Segmentation Models
+The script will check all dependencies including: Git Bash, CUDA Drivers, Python.
 
-The Dearz-Drone-1-transfer and dearz13-baseline models are designed to segment and count the deer in a given frame (for drone and FLIR data respectively) after the initial "deer or no deer" filtering step.
+The script outputs an html file which shows the original video with overlaid deer detections and counts.
+
+
+## Datasets
+
+Download the datasets:
+```
+gcloud storage cp -r gs://deer-datasets/* .
+```
+
+## Model Training
+
+```
+wandb init --project DeerAI --entity nasa-harvest
+yolo settings wandb=True
+```
+
+
+| Model             | Purpose                                           | Baseline          | Train Command                                 |
+| -------------     | -------------                                     | -------------     |  -------------                                |
+| flir-binary-1     | Filter out non-deer frames in helicopter videos.  | yolo11n           | `yolo cfg="flir-binary-1/args.yaml"`            |
+| drone-binary-1    | Filter out non-deer frames in drone videos.       | yolo11n           | `yolo cfg="drone-binary-1/args.yaml"`           |
+| dearz13-baseline  | Detects deer in helicopter videos.                | yolo12n           | `yolo cfg="dearz13-baseline/args.yaml"`        |
+| Dearz-Drone-1-transfer | Detects deer in drone videos.                | dearz13-baseline  | `yolo cfg="Dearz-Drone-1-transfer/args.yaml"`  |
+
+
+
+
+
+
